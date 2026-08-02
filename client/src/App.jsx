@@ -9,6 +9,7 @@ import Companies from './pages/Companies.jsx';
 import CompanyDetail from './pages/CompanyDetail.jsx';
 import Account from './pages/Account.jsx';
 import Users from './pages/Users.jsx';
+import Settings from './pages/Settings.jsx';
 import NotFound from './pages/NotFound.jsx';
 
 export default function App() {
@@ -35,6 +36,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={['admin']}>
                 <Users />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <Settings />
               </ProtectedRoute>
             }
           />

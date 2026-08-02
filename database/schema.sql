@@ -110,6 +110,28 @@ CREATE TABLE IF NOT EXISTS holding_expenses (
 );
 
 -- ---------------------------------------------------------------------------
+-- org_settings: a singleton row holding the brand story / vision text shown
+-- on the investor Overview page. Editable by admins from the Settings page.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS org_settings (
+    id          INT PRIMARY KEY DEFAULT 1,
+    tagline     VARCHAR(300),
+    brand_story TEXT,
+    vision      TEXT,
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (id = 1)
+);
+
+INSERT INTO org_settings (id, tagline, brand_story, vision)
+VALUES (
+    1,
+    'One ledger for every company you hold, and every investor who holds a piece of it.',
+    'Write a short paragraph here about how the holding company got started and what it stands for — edited from Settings, in the app, by an admin.',
+    'Write a sentence or two here about where the holding company is headed — also edited from Settings.'
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- ---------------------------------------------------------------------------
 -- Indexes for the lookups the API will do constantly.
 -- ---------------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_investor_companies_investor ON investor_companies(investor_id);

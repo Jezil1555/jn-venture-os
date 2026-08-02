@@ -9,7 +9,10 @@ const BASE_NAV_ITEMS = [
   { to: '/dashboard/account', label: 'Account' },
 ];
 
-const ADMIN_NAV_ITEMS = [{ to: '/dashboard/users', label: 'Users' }];
+const ADMIN_NAV_ITEMS = [
+  { to: '/dashboard/users', label: 'Users' },
+  { to: '/dashboard/settings', label: 'Settings' },
+];
 
 export default function Layout() {
   const { user, logout } = useAuth();

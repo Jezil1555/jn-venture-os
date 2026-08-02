@@ -4,6 +4,7 @@ import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatCurrency } from '../utils/currency.js';
 import '../styles/ui.css';
+import './Dashboard.css';
 
 // Companies can each carry a different currency, so a single blended sum
 // across all of them would be misleading (adding USD to INR is meaningless).
@@ -18,23 +19,31 @@ function sumByCurrency(companies, field) {
   return totals;
 }
 
+function formatSince(dateStr) {
+  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [companies, setCompanies] = useState([]);
+  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    api
-      .get('/companies')
-      .then(({ data }) => {
-        if (!cancelled) setCompanies(data.companies);
+    Promise.all([api.get('/companies'), api.get('/settings')])
+      .then(([companiesRes, settingsRes]) => {
+        if (cancelled) return;
+        setCompanies(companiesRes.data.companies);
+        setSettings(settingsRes.data.settings);
       })
       .catch(() => {
-        if (!cancelled) setError('Could not load companies.');
+        if (!cancelled) setError('Could not load your dashboard.');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -44,12 +53,37 @@ export default function Dashboard() {
     };
   }, []);
 
-  const isAdmin = user?.role === 'admin';
   const activeCount = companies.filter((c) => c.status === 'active').length;
   const committedByCurrency = !isAdmin ? sumByCurrency(companies, 'capital_committed') : {};
 
   return (
     <div>
+      {!isAdmin && !loading && settings && (settings.tagline || settings.brand_story || settings.vision) && (
+        <div className="brand-hero">
+          <div className="ledger-rules brand-hero-rules" />
+          <div className="brand-hero-content">
+            <div className="brand-hero-mark">
+              JN Venture<span>OS</span>
+            </div>
+            {settings.tagline && <p className="brand-hero-tagline">{settings.tagline}</p>}
+            <div className="brand-hero-columns">
+              {settings.brand_story && (
+                <div>
+                  <div className="brand-hero-label">Our Story</div>
+                  <p>{settings.brand_story}</p>
+                </div>
+              )}
+              {settings.vision && (
+                <div>
+                  <div className="brand-hero-label">Our Vision</div>
+                  <p>{settings.vision}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <div className="eyebrow">Overview</div>
@@ -65,22 +99,20 @@ export default function Dashboard() {
       {error && <div className="banner-error">{error}</div>}
 
       {!loading && (
-        <div className="stat-grid">
-          <div className="stat-card">
-            <div className="label">{isAdmin ? 'Portfolio Companies' : 'Companies You Hold'}</div>
-            <div className="value">{companies.length}</div>
+        <div className="chip-row">
+          <div className="chip">
+            <span className="chip-value">{companies.length}</span>
+            <span className="chip-label">{isAdmin ? 'Companies' : 'Held'}</span>
           </div>
-          <div className="stat-card">
-            <div className="label">Active</div>
-            <div className="value">{activeCount}</div>
+          <div className="chip">
+            <span className="chip-value">{activeCount}</span>
+            <span className="chip-label">Active</span>
           </div>
           {!isAdmin &&
             Object.entries(committedByCurrency).map(([currency, total]) => (
-              <div className="stat-card" key={currency}>
-                <div className="label">
-                  Capital Committed{Object.keys(committedByCurrency).length > 1 ? ` (${currency})` : ''}
-                </div>
-                <div className="value">{formatCurrency(total, currency)}</div>
+              <div className="chip" key={currency}>
+                <span className="chip-value mono">{formatCurrency(total, currency)}</span>
+                <span className="chip-label">Committed{Object.keys(committedByCurrency).length > 1 ? ` · ${currency}` : ''}</span>
               </div>
             ))}
         </div>
@@ -88,7 +120,7 @@ export default function Dashboard() {
 
       <div className="card card-pad">
         <div className="section-title">
-          {isAdmin ? 'Recently Added Companies' : 'Your Companies'}
+          {isAdmin ? 'Portfolio Companies' : 'Your Companies'}
         </div>
 
         {loading && <p style={{ color: 'var(--slate)' }}>Loading…</p>}
@@ -110,10 +142,11 @@ export default function Dashboard() {
               <thead>
                 <tr>
                   <th>Company</th>
+                  <th>Since</th>
                   <th>Status</th>
                   {isAdmin ? (
                     <>
-                      <th className="num">Total Sales</th>
+                      <th className="num">Sales (This Month)</th>
                       <th className="num">Total Invested</th>
                       <th className="num">Returns Received</th>
                     </>
@@ -128,19 +161,20 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {companies.slice(0, 6).map((c) => (
+                {companies.map((c) => (
                   <tr
                     key={c.id}
                     className="clickable"
                     onClick={() => navigate(`/dashboard/companies/${c.id}`)}
                   >
                     <td>{c.name}</td>
+                    <td style={{ color: 'var(--slate)' }}>{formatSince(c.created_at)}</td>
                     <td>
                       <span className={`badge ${c.status}`}>{c.status}</span>
                     </td>
                     {isAdmin ? (
                       <>
-                        <td className="num">{formatCurrency(c.total_sales, c.currency)}</td>
+                        <td className="num">{formatCurrency(c.sales_this_month, c.currency)}</td>
                         <td className="num">{formatCurrency(c.total_invested, c.currency)}</td>
                         <td className="num">{formatCurrency(c.total_returns_received, c.currency)}</td>
                       </>

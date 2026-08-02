@@ -15,12 +15,13 @@ async function assertCanViewCompany(companyId, user) {
   return company;
 }
 
-// GET /api/companies/:id/sales
+// GET /api/companies/:id/sales?from=YYYY-MM-DD&to=YYYY-MM-DD
 export async function getSales(req, res) {
   await assertCanViewCompany(req.params.id, req.user);
+  const { from, to } = req.query;
   const [sales, total] = await Promise.all([
-    listSalesForCompany(req.params.id),
-    totalSalesForCompany(req.params.id),
+    listSalesForCompany(req.params.id, { from, to }),
+    totalSalesForCompany(req.params.id, { from, to }),
   ]);
   return res.json({ sales, total });
 }

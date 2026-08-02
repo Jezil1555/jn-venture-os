@@ -46,6 +46,17 @@ export async function createDistribution({ companyId, investorId, distributedOn,
   return rows[0];
 }
 
+export async function updateDistribution(distributionId, companyId, { distributedOn, amount, notes }) {
+  const { rows } = await query(
+    `UPDATE distributions
+     SET distributed_on = $1, amount = $2, notes = $3
+     WHERE id = $4 AND company_id = $5
+     RETURNING id, company_id, investor_id, amount, distributed_on, notes, created_at`,
+    [distributedOn, amount, notes || null, distributionId, companyId]
+  );
+  return rows[0] || null;
+}
+
 export async function deleteDistribution(distributionId, companyId) {
   const { rowCount } = await query(`DELETE FROM distributions WHERE id = $1 AND company_id = $2`, [
     distributionId,

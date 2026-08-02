@@ -83,9 +83,13 @@ table.data-table {
   background: var(--paper-dim);
 }
 
+.data-table th.num,
+.data-table td.num {
+  text-align: right;
+}
+
 .data-table td.num {
   font-family: var(--font-mono);
-  text-align: right;
 }
 
 .badge {

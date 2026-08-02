@@ -41,6 +41,19 @@ database before being handed to you.
 - **Admin dashboard totals** — the Overview page and each company's page
   show total sales, total invested, and total returns received per
   company — visible to admins only.
+- **Editable stakes & distributions** — admins can edit an investor's
+  ownership % / capital committed after linking them, and edit a past
+  distribution entry, not just delete and redo it.
+- **Delete a company** — from that company's page, in a clearly separated
+  "Danger Zone" section.
+- **Sales date filtering + monthly trend chart** — filter a company's
+  sales list to a date range, and see a bar chart of sales by month. The
+  Overview dashboard shows *this month's* sales per company rather than
+  an all-time total.
+- **Organization settings** — admins write a tagline, brand story, and
+  vision from Settings; investors see it as a hero section at the top of
+  their Overview page. This is real content you write yourself, not
+  fixed copy.
 
 ## What's not built yet
 

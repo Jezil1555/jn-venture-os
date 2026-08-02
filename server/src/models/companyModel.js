@@ -12,6 +12,10 @@ export async function listCompaniesForUser(user) {
     const { rows } = await query(
       `SELECT c.id, c.name, c.description, c.industry, c.currency, c.status, c.created_at,
               COALESCE((SELECT SUM(amount) FROM sales WHERE company_id = c.id), 0) AS total_sales,
+              COALESCE((SELECT SUM(amount) FROM sales
+                        WHERE company_id = c.id
+                          AND sale_date >= date_trunc('month', CURRENT_DATE)
+                          AND sale_date < date_trunc('month', CURRENT_DATE) + INTERVAL '1 month'), 0) AS sales_this_month,
               COALESCE((SELECT SUM(capital_committed) FROM investor_companies WHERE company_id = c.id), 0) AS total_invested,
               COALESCE((SELECT SUM(amount) FROM returns_received WHERE company_id = c.id), 0) AS total_returns_received
        FROM companies c

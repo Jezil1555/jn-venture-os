@@ -14,6 +14,7 @@ import { getReturns, postReturn, removeReturn } from '../controllers/returnsCont
 import {
   getDistributions,
   postDistribution,
+  patchDistribution,
   removeDistribution,
 } from '../controllers/distributionsController.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
@@ -49,6 +50,7 @@ router.delete('/:id/returns/:returnId', requireRole('admin'), asyncHandler(remov
 // manages it, investors can view (only their own, enforced in the model).
 router.get('/:id/distributions', asyncHandler(getDistributions));
 router.post('/:id/distributions', requireRole('admin'), asyncHandler(postDistribution));
+router.patch('/:id/distributions/:distributionId', requireRole('admin'), asyncHandler(patchDistribution));
 router.delete('/:id/distributions/:distributionId', requireRole('admin'), asyncHandler(removeDistribution));
 
 export default router;

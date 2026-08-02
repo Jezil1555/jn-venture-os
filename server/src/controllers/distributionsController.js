@@ -4,6 +4,7 @@ import {
   listDistributionsForCompany,
   listDistributionsForInvestor,
   createDistribution,
+  updateDistribution,
   deleteDistribution,
 } from '../models/distributionsModel.js';
 
@@ -59,6 +60,29 @@ export async function postDistribution(req, res) {
     createdBy: req.user.id,
   });
   return res.status(201).json({ distribution: entry });
+}
+
+// PATCH /api/companies/:id/distributions/:distributionId (admin only)
+export async function patchDistribution(req, res) {
+  const { distributedOn, amount, notes } = req.body;
+
+  if (!distributedOn || amount === undefined || amount === null) {
+    return res.status(400).json({ error: 'Date and amount are both required.' });
+  }
+  const numericAmount = Number(amount);
+  if (Number.isNaN(numericAmount)) {
+    return res.status(400).json({ error: 'Amount must be a number.' });
+  }
+
+  const updated = await updateDistribution(req.params.distributionId, req.params.id, {
+    distributedOn,
+    amount: numericAmount,
+    notes,
+  });
+  if (!updated) {
+    return res.status(404).json({ error: 'Distribution entry not found.' });
+  }
+  return res.json({ distribution: updated });
 }
 
 // DELETE /api/companies/:id/distributions/:distributionId (admin only)

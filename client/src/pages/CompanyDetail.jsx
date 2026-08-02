@@ -1,9 +1,21 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatCurrency, CURRENCY_OPTIONS } from '../utils/currency.js';
 import '../styles/ui.css';
+
+function monthKey(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function monthLabel(key) {
+  const [year, month] = key.split('-');
+  const d = new Date(Number(year), Number(month) - 1, 1);
+  return d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+}
 
 export default function CompanyDetail() {
   const { id } = useParams();
@@ -21,10 +33,17 @@ export default function CompanyDetail() {
   const [distributions, setDistributions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const [salesFilter, setSalesFilter] = useState({ from: '', to: '' });
 
   const [linkForm, setLinkForm] = useState({ investorId: '', ownershipPercentage: '', capitalCommitted: '' });
   const [linkError, setLinkError] = useState(null);
   const [linking, setLinking] = useState(false);
+
+  const [editingInvestorId, setEditingInvestorId] = useState(null);
+  const [editStakeForm, setEditStakeForm] = useState({ ownershipPercentage: '', capitalCommitted: '' });
+  const [savingStake, setSavingStake] = useState(false);
 
   const [saleForm, setSaleForm] = useState({ saleDate: '', amount: '', notes: '' });
   const [saleError, setSaleError] = useState(null);
@@ -37,8 +56,18 @@ export default function CompanyDetail() {
   const [distForm, setDistForm] = useState({ investorId: '', distributedOn: '', amount: '', notes: '' });
   const [distError, setDistError] = useState(null);
   const [savingDist, setSavingDist] = useState(false);
+  const [editingDistId, setEditingDistId] = useState(null);
 
   const [savingCurrency, setSavingCurrency] = useState(false);
+
+  const loadSales = useCallback(async () => {
+    const params = {};
+    if (salesFilter.from) params.from = salesFilter.from;
+    if (salesFilter.to) params.to = salesFilter.to;
+    const { data } = await api.get(`/companies/${id}/sales`, { params });
+    setSales(data.sales);
+    setSalesTotal(data.total);
+  }, [id, salesFilter]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,13 +76,9 @@ export default function CompanyDetail() {
       const { data } = await api.get(`/companies/${id}`);
       setCompany(data.company);
 
-      const [salesRes, distRes] = await Promise.all([
-        api.get(`/companies/${id}/sales`),
-        api.get(`/companies/${id}/distributions`),
-      ]);
-      setSales(salesRes.data.sales);
-      setSalesTotal(salesRes.data.total);
+      const distRes = await api.get(`/companies/${id}/distributions`);
       setDistributions(distRes.data.distributions);
+      await loadSales();
 
       if (isAdmin) {
         const [investorsRes, usersRes, returnsRes] = await Promise.all([
@@ -71,11 +96,29 @@ export default function CompanyDetail() {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isAdmin]);
 
   useEffect(() => {
     load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isAdmin]);
+
+  useEffect(() => {
+    if (!loading) loadSales();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [salesFilter]);
+
+  const chartData = useMemo(() => {
+    const byMonth = {};
+    for (const s of sales) {
+      const key = monthKey(s.sale_date);
+      byMonth[key] = (byMonth[key] || 0) + Number(s.amount);
+    }
+    return Object.keys(byMonth)
+      .sort()
+      .map((key) => ({ month: monthLabel(key), total: byMonth[key] }));
+  }, [sales]);
 
   async function handleLinkInvestor(e) {
     e.preventDefault();
@@ -105,6 +148,30 @@ export default function CompanyDetail() {
       load();
     } catch {
       setError('Could not remove that investor.');
+    }
+  }
+
+  function startEditStake(inv) {
+    setEditingInvestorId(inv.id);
+    setEditStakeForm({
+      ownershipPercentage: String(inv.ownership_percentage),
+      capitalCommitted: String(inv.capital_committed),
+    });
+  }
+
+  async function handleSaveStake(investorId) {
+    setSavingStake(true);
+    try {
+      await api.put(`/companies/${id}/investors/${investorId}`, {
+        ownershipPercentage: Number(editStakeForm.ownershipPercentage) || 0,
+        capitalCommitted: Number(editStakeForm.capitalCommitted) || 0,
+      });
+      setEditingInvestorId(null);
+      load();
+    } catch {
+      setError('Could not update that stake.');
+    } finally {
+      setSavingStake(false);
     }
   }
 
@@ -172,7 +239,22 @@ export default function CompanyDetail() {
     }
   }
 
-  async function handleAddDistribution(e) {
+  function startEditDistribution(d) {
+    setEditingDistId(d.id);
+    setDistForm({
+      investorId: d.investor_id,
+      distributedOn: d.distributed_on.slice(0, 10),
+      amount: String(d.amount),
+      notes: d.notes || '',
+    });
+  }
+
+  function cancelEditDistribution() {
+    setEditingDistId(null);
+    setDistForm({ investorId: '', distributedOn: '', amount: '', notes: '' });
+  }
+
+  async function handleSubmitDistribution(e) {
     e.preventDefault();
     setDistError(null);
     if (!distForm.investorId || !distForm.distributedOn || distForm.amount === '') {
@@ -181,13 +263,22 @@ export default function CompanyDetail() {
     }
     setSavingDist(true);
     try {
-      await api.post(`/companies/${id}/distributions`, {
-        investorId: distForm.investorId,
-        distributedOn: distForm.distributedOn,
-        amount: Number(distForm.amount),
-        notes: distForm.notes,
-      });
+      if (editingDistId) {
+        await api.patch(`/companies/${id}/distributions/${editingDistId}`, {
+          distributedOn: distForm.distributedOn,
+          amount: Number(distForm.amount),
+          notes: distForm.notes,
+        });
+      } else {
+        await api.post(`/companies/${id}/distributions`, {
+          investorId: distForm.investorId,
+          distributedOn: distForm.distributedOn,
+          amount: Number(distForm.amount),
+          notes: distForm.notes,
+        });
+      }
       setDistForm({ investorId: '', distributedOn: '', amount: '', notes: '' });
+      setEditingDistId(null);
       load();
     } catch (err) {
       setDistError(err.response?.data?.error || 'Could not save that payout.');
@@ -199,6 +290,7 @@ export default function CompanyDetail() {
   async function handleDeleteDistribution(distId) {
     try {
       await api.delete(`/companies/${id}/distributions/${distId}`);
+      if (editingDistId === distId) cancelEditDistribution();
       load();
     } catch {
       setError('Could not remove that entry.');
@@ -214,6 +306,21 @@ export default function CompanyDetail() {
       setError('Could not update the currency.');
     } finally {
       setSavingCurrency(false);
+    }
+  }
+
+  async function handleDeleteCompany() {
+    const confirmed = window.confirm(
+      `Delete "${company.name}"? This cannot be undone from here — sales, returns, and distribution history for this company will be removed too.`
+    );
+    if (!confirmed) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/companies/${id}`);
+      navigate('/dashboard/companies', { replace: true });
+    } catch {
+      setError('Could not delete this company.');
+      setDeleting(false);
     }
   }
 
@@ -330,10 +437,80 @@ export default function CompanyDetail() {
           </span>
         </div>
 
+        {sales.length >= 2 && (
+          <div style={{ height: 180, marginBottom: '1.5rem' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 12, fill: 'var(--slate)' }}
+                  axisLine={{ stroke: 'var(--line)' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: 'var(--slate)' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={60}
+                  tickFormatter={(v) => formatCurrency(v, currency)}
+                />
+                <Tooltip
+                  formatter={(value) => formatCurrency(value, currency)}
+                  contentStyle={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '13px',
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius-sm)',
+                  }}
+                />
+                <Bar dataKey="total" fill="var(--brass)" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        <div
+          className="form-grid"
+          style={{ gridTemplateColumns: '1fr 1fr auto', alignItems: 'end', display: 'grid', marginBottom: '1rem' }}
+        >
+          <div className="field">
+            <label htmlFor="salesFrom">From</label>
+            <input
+              id="salesFrom"
+              type="date"
+              value={salesFilter.from}
+              onChange={(e) => setSalesFilter({ ...salesFilter, from: e.target.value })}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="salesTo">To</label>
+            <input
+              id="salesTo"
+              type="date"
+              value={salesFilter.to}
+              onChange={(e) => setSalesFilter({ ...salesFilter, to: e.target.value })}
+            />
+          </div>
+          {(salesFilter.from || salesFilter.to) && (
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setSalesFilter({ from: '', to: '' })}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
         {sales.length === 0 && (
           <div className="empty-state">
-            <h3>No sales recorded yet</h3>
-            <p>{isAdmin ? 'Add the first entry below.' : 'Nothing has been logged for this company yet.'}</p>
+            <h3>No sales in this range</h3>
+            <p>
+              {isAdmin
+                ? 'Add an entry below, or clear the date filter above.'
+                : 'Nothing has been logged for this period.'}
+            </p>
           </div>
         )}
 
@@ -540,23 +717,81 @@ export default function CompanyDetail() {
                 </tr>
               </thead>
               <tbody>
-                {investors.map((inv) => (
-                  <tr key={inv.id}>
-                    <td>{inv.name}</td>
-                    <td>{inv.email}</td>
-                    <td className="num">{Number(inv.ownership_percentage)}%</td>
-                    <td className="num">{formatCurrency(inv.capital_committed, currency)}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button
-                        type="button"
-                        className="btn btn-outline"
-                        onClick={() => handleUnlink(inv.id)}
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {investors.map((inv) =>
+                  editingInvestorId === inv.id ? (
+                    <tr key={inv.id}>
+                      <td>{inv.name}</td>
+                      <td>{inv.email}</td>
+                      <td className="num">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          value={editStakeForm.ownershipPercentage}
+                          onChange={(e) =>
+                            setEditStakeForm({ ...editStakeForm, ownershipPercentage: e.target.value })
+                          }
+                          style={{ width: '90px', textAlign: 'right' }}
+                        />
+                      </td>
+                      <td className="num">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={editStakeForm.capitalCommitted}
+                          onChange={(e) =>
+                            setEditStakeForm({ ...editStakeForm, capitalCommitted: e.target.value })
+                          }
+                          style={{ width: '130px', textAlign: 'right' }}
+                        />
+                      </td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button
+                          type="button"
+                          className="btn btn-dark"
+                          disabled={savingStake}
+                          onClick={() => handleSaveStake(inv.id)}
+                          style={{ marginRight: '0.5rem' }}
+                        >
+                          {savingStake ? 'Saving…' : 'Save'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          onClick={() => setEditingInvestorId(null)}
+                        >
+                          Cancel
+                        </button>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={inv.id}>
+                      <td>{inv.name}</td>
+                      <td>{inv.email}</td>
+                      <td className="num">{Number(inv.ownership_percentage)}%</td>
+                      <td className="num">{formatCurrency(inv.capital_committed, currency)}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          onClick={() => startEditStake(inv)}
+                          style={{ marginRight: '0.5rem' }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          onClick={() => handleUnlink(inv.id)}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           )}
@@ -629,7 +864,7 @@ export default function CompanyDetail() {
         </div>
       )}
 
-      <div className="card card-pad">
+      <div className="card card-pad" style={{ marginBottom: isAdmin ? '1.5rem' : 0 }}>
         <div className="section-title">Distributions</div>
         {!isAdmin && (
           <p style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)', margin: '0 0 1rem' }}>
@@ -667,7 +902,15 @@ export default function CompanyDetail() {
                   <td className="num">{formatCurrency(d.amount, currency)}</td>
                   <td>{d.notes || '—'}</td>
                   {isAdmin && (
-                    <td style={{ textAlign: 'right' }}>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={() => startEditDistribution(d)}
+                        style={{ marginRight: '0.5rem' }}
+                      >
+                        Edit
+                      </button>
                       <button
                         type="button"
                         className="btn btn-outline"
@@ -686,19 +929,20 @@ export default function CompanyDetail() {
         {isAdmin && investors.length > 0 && (
           <>
             <div className="section-title" style={{ fontSize: 'var(--step-sm)' }}>
-              Record a payout
+              {editingDistId ? 'Edit payout' : 'Record a payout'}
             </div>
             {distError && <div className="banner-error">{distError}</div>}
             <form
               className="form-grid"
               style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr auto', alignItems: 'end', display: 'grid' }}
-              onSubmit={handleAddDistribution}
+              onSubmit={handleSubmitDistribution}
             >
               <div className="field">
                 <label htmlFor="distInvestor">Investor</label>
                 <select
                   id="distInvestor"
                   value={distForm.investorId}
+                  disabled={!!editingDistId}
                   onChange={(e) => setDistForm({ ...distForm, investorId: e.target.value })}
                   style={{
                     width: '100%',
@@ -746,13 +990,41 @@ export default function CompanyDetail() {
                   placeholder="Optional"
                 />
               </div>
-              <button className="btn btn-dark" type="submit" disabled={savingDist}>
-                {savingDist ? 'Saving…' : 'Add'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn btn-dark" type="submit" disabled={savingDist}>
+                  {savingDist ? 'Saving…' : editingDistId ? 'Update' : 'Add'}
+                </button>
+                {editingDistId && (
+                  <button type="button" className="btn btn-outline" onClick={cancelEditDistribution}>
+                    Cancel
+                  </button>
+                )}
+              </div>
             </form>
           </>
         )}
       </div>
+
+      {isAdmin && (
+        <div className="card card-pad" style={{ borderColor: 'var(--negative)' }}>
+          <div className="section-title" style={{ color: 'var(--negative)' }}>
+            Danger Zone
+          </div>
+          <p style={{ fontSize: 'var(--step-sm)', color: 'var(--slate)', margin: '0 0 1rem' }}>
+            Deleting a company removes it and its sales, returns, and distribution history.
+            Investors linked to it lose access immediately. This cannot be undone from here.
+          </p>
+          <button
+            type="button"
+            className="btn"
+            style={{ background: 'var(--negative)', color: 'var(--white)' }}
+            disabled={deleting}
+            onClick={handleDeleteCompany}
+          >
+            {deleting ? 'Deleting…' : 'Delete This Company'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
