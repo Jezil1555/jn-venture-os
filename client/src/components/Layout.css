@@ -1,0 +1,135 @@
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+@media (max-width: 780px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    display: none;
+  }
+}
+
+.sidebar {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 1.75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.sidebar-mark {
+  font-family: var(--font-display);
+  font-size: var(--step-md);
+}
+
+.sidebar-mark span {
+  color: var(--brass-bright);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.sidebar-nav a {
+  display: block;
+  text-decoration: none;
+  color: var(--slate-light);
+  font-size: var(--step-sm);
+  font-weight: 500;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.sidebar-nav a:hover {
+  background: var(--ink-raised);
+  color: var(--paper);
+}
+
+.sidebar-nav a.active {
+  background: var(--ink-raised);
+  color: var(--brass-bright);
+}
+
+.sidebar-user {
+  border-top: 1px solid var(--line-dark);
+  padding-top: 1.1rem;
+  font-size: var(--step-xs);
+}
+
+.sidebar-user .name {
+  color: var(--paper);
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.sidebar-user .role {
+  color: var(--slate-light);
+  text-transform: capitalize;
+  margin-bottom: 0.75rem;
+}
+
+.sidebar-user button {
+  background: transparent;
+  border: 1px solid var(--line-dark);
+  color: var(--paper);
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--step-xs);
+  cursor: pointer;
+  width: 100%;
+}
+
+.sidebar-user button:hover {
+  border-color: var(--brass);
+  color: var(--brass-bright);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.main {
+  padding: 2rem;
+  flex: 1;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.page-header h1 {
+  font-size: var(--step-lg);
+}
+
+.page-header .eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--step-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--slate);
+  margin-bottom: 0.25rem;
+}
+
+.page-header p.lede {
+  color: var(--slate);
+  margin: 0.35rem 0 0;
+  font-size: var(--step-sm);
+  max-width: 60ch;
+}
