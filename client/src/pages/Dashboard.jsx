@@ -36,18 +36,32 @@ export default function Dashboard() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    Promise.all([api.get('/companies'), api.get('/settings')])
-      .then(([companiesRes, settingsRes]) => {
-        if (cancelled) return;
-        setCompanies(companiesRes.data.companies);
-        setSettings(settingsRes.data.settings);
+
+    // These are fetched independently on purpose — the brand hero is a
+    // nice-to-have, and its failure should never take down the actual
+    // companies list, which is the page's real job.
+    api
+      .get('/companies')
+      .then(({ data }) => {
+        if (!cancelled) setCompanies(data.companies);
       })
       .catch(() => {
-        if (!cancelled) setError('Could not load your dashboard.');
+        if (!cancelled) setError('Could not load your companies.');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
+    api
+      .get('/settings')
+      .then(({ data }) => {
+        if (!cancelled) setSettings(data.settings);
+      })
+      .catch(() => {
+        // Silent on purpose: no hero section is a fine fallback, it
+        // shouldn't block or error out the rest of the dashboard.
+      });
+
     return () => {
       cancelled = true;
     };
