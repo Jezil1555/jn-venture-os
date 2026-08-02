@@ -24,6 +24,9 @@ database before being handed to you.
 - **Account management** — admins can create new admin/investor accounts
   from the Users page (no database access needed), and anyone can change
   their own password from their Account page.
+- **Sales** — admins can log dated sales entries per company with a running
+  total; investors linked to that company can view (not edit) the same
+  list.
 
 ## What's not built yet
 

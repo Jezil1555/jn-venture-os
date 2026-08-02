@@ -9,6 +9,7 @@ import {
   putCompanyInvestor,
   deleteCompanyInvestor,
 } from '../controllers/companyController.js';
+import { getSales, postSale, removeSale } from '../controllers/salesController.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
@@ -27,5 +28,9 @@ router.delete('/:id', requireRole('admin'), asyncHandler(removeCompany));
 router.get('/:id/investors', requireRole('admin'), asyncHandler(getCompanyInvestors));
 router.put('/:id/investors/:investorId', requireRole('admin'), asyncHandler(putCompanyInvestor));
 router.delete('/:id/investors/:investorId', requireRole('admin'), asyncHandler(deleteCompanyInvestor));
+
+router.get('/:id/sales', asyncHandler(getSales));
+router.post('/:id/sales', requireRole('admin'), asyncHandler(postSale));
+router.delete('/:id/sales/:saleId', requireRole('admin'), asyncHandler(removeSale));
 
 export default router;

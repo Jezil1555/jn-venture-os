@@ -20,6 +20,8 @@ export default function CompanyDetail() {
   const [company, setCompany] = useState(null);
   const [investors, setInvestors] = useState([]);
   const [allInvestors, setAllInvestors] = useState([]);
+  const [sales, setSales] = useState([]);
+  const [salesTotal, setSalesTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -27,12 +29,20 @@ export default function CompanyDetail() {
   const [linkError, setLinkError] = useState(null);
   const [linking, setLinking] = useState(false);
 
+  const [saleForm, setSaleForm] = useState({ saleDate: '', amount: '', notes: '' });
+  const [saleError, setSaleError] = useState(null);
+  const [savingSale, setSavingSale] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const { data } = await api.get(`/companies/${id}`);
       setCompany(data.company);
+
+      const salesRes = await api.get(`/companies/${id}/sales`);
+      setSales(salesRes.data.sales);
+      setSalesTotal(salesRes.data.total);
 
       if (isAdmin) {
         const [investorsRes, usersRes] = await Promise.all([
@@ -84,6 +94,38 @@ export default function CompanyDetail() {
     }
   }
 
+  async function handleAddSale(e) {
+    e.preventDefault();
+    setSaleError(null);
+    if (!saleForm.saleDate || saleForm.amount === '') {
+      setSaleError('Date and amount are both required.');
+      return;
+    }
+    setSavingSale(true);
+    try {
+      await api.post(`/companies/${id}/sales`, {
+        saleDate: saleForm.saleDate,
+        amount: Number(saleForm.amount),
+        notes: saleForm.notes,
+      });
+      setSaleForm({ saleDate: '', amount: '', notes: '' });
+      load();
+    } catch (err) {
+      setSaleError(err.response?.data?.error || 'Could not save that entry.');
+    } finally {
+      setSavingSale(false);
+    }
+  }
+
+  async function handleDeleteSale(saleId) {
+    try {
+      await api.delete(`/companies/${id}/sales/${saleId}`);
+      load();
+    } catch {
+      setError('Could not remove that entry.');
+    }
+  }
+
   if (loading) {
     return <p style={{ color: 'var(--slate)' }}>Loading…</p>;
   }
@@ -129,6 +171,103 @@ export default function CompanyDetail() {
           </div>
         </div>
       )}
+
+      <div className="card card-pad" style={{ marginBottom: '1.5rem' }}>
+        <div
+          className="section-title"
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
+        >
+          <span>Sales</span>
+          <span className="mono" style={{ fontSize: 'var(--step-sm)', color: 'var(--slate)' }}>
+            Total: {formatCurrency(salesTotal)}
+          </span>
+        </div>
+
+        {sales.length === 0 && (
+          <div className="empty-state">
+            <h3>No sales recorded yet</h3>
+            <p>{isAdmin ? 'Add the first entry below.' : 'Nothing has been logged for this company yet.'}</p>
+          </div>
+        )}
+
+        {sales.length > 0 && (
+          <table className="data-table" style={{ marginBottom: isAdmin ? '1.5rem' : 0 }}>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th className="num">Amount</th>
+                <th>Notes</th>
+                {isAdmin && <th></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {sales.map((s) => (
+                <tr key={s.id}>
+                  <td>{new Date(s.sale_date).toLocaleDateString()}</td>
+                  <td className="num">{formatCurrency(s.amount)}</td>
+                  <td>{s.notes || '—'}</td>
+                  {isAdmin && (
+                    <td style={{ textAlign: 'right' }}>
+                      <button type="button" className="btn btn-outline" onClick={() => handleDeleteSale(s.id)}>
+                        Remove
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {isAdmin && (
+          <>
+            <div className="section-title" style={{ fontSize: 'var(--step-sm)' }}>
+              Log a sale
+            </div>
+            {saleError && <div className="banner-error">{saleError}</div>}
+            <form
+              className="form-grid"
+              style={{ gridTemplateColumns: '1fr 1fr 2fr auto', alignItems: 'end', display: 'grid' }}
+              onSubmit={handleAddSale}
+            >
+              <div className="field">
+                <label htmlFor="saleDate">Date</label>
+                <input
+                  id="saleDate"
+                  type="date"
+                  value={saleForm.saleDate}
+                  onChange={(e) => setSaleForm({ ...saleForm, saleDate: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="saleAmount">Amount</label>
+                <input
+                  id="saleAmount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={saleForm.amount}
+                  onChange={(e) => setSaleForm({ ...saleForm, amount: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="saleNotes">Notes</label>
+                <input
+                  id="saleNotes"
+                  value={saleForm.notes}
+                  onChange={(e) => setSaleForm({ ...saleForm, notes: e.target.value })}
+                  placeholder="Optional"
+                />
+              </div>
+              <button className="btn btn-dark" type="submit" disabled={savingSale}>
+                {savingSale ? 'Saving…' : 'Add'}
+              </button>
+            </form>
+          </>
+        )}
+      </div>
 
       {isAdmin && (
         <div className="card card-pad">
