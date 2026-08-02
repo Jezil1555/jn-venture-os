@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { formatCurrency, CURRENCY_OPTIONS } from '../utils/currency.js';
 import '../styles/ui.css';
 
 export default function Companies() {
@@ -14,7 +15,7 @@ export default function Companies() {
   const [error, setError] = useState(null);
 
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', industry: '', description: '' });
+  const [form, setForm] = useState({ name: '', industry: '', description: '', currency: 'USD' });
   const [formError, setFormError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -39,7 +40,7 @@ export default function Companies() {
     setSaving(true);
     try {
       await api.post('/companies', form);
-      setForm({ name: '', industry: '', description: '' });
+      setForm({ name: '', industry: '', description: '', currency: 'USD' });
       setShowForm(false);
       loadCompanies();
     } catch (err) {
@@ -102,6 +103,26 @@ export default function Companies() {
                 placeholder="Optional"
               />
             </div>
+            <div className="field">
+              <label htmlFor="currency">Currency</label>
+              <select
+                id="currency"
+                value={form.currency}
+                onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.7rem 0.8rem',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                {CURRENCY_OPTIONS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button className="btn btn-dark" type="submit" disabled={saving} style={{ width: 'fit-content' }}>
               {saving ? 'Saving…' : 'Create Company'}
             </button>
@@ -129,6 +150,7 @@ export default function Companies() {
               <tr>
                 <th>Name</th>
                 <th>Industry</th>
+                <th>Currency</th>
                 <th>Status</th>
                 {!isAdmin && <th style={{ textAlign: 'right' }}>Your Stake</th>}
               </tr>
@@ -138,6 +160,7 @@ export default function Companies() {
                 <tr key={c.id} className="clickable" onClick={() => navigate(`/dashboard/companies/${c.id}`)}>
                   <td>{c.name}</td>
                   <td>{c.industry || '—'}</td>
+                  <td className="mono">{c.currency}</td>
                   <td>
                     <span className={`badge ${c.status}`}>{c.status}</span>
                   </td>

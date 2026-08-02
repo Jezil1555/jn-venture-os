@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS companies (
     name        VARCHAR(200) NOT NULL,
     description TEXT,
     industry    VARCHAR(120),
+    currency    VARCHAR(3) NOT NULL DEFAULT 'USD'
+                  CHECK (currency IN ('USD', 'INR', 'QAR')),
     status      VARCHAR(20) NOT NULL DEFAULT 'active'
                   CHECK (status IN ('active', 'exited', 'dissolved')),
     created_by  UUID REFERENCES users(id) ON DELETE SET NULL,

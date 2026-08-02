@@ -2,13 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { formatCurrency } from '../utils/currency.js';
 import '../styles/ui.css';
 
-function formatCurrency(value) {
-  const n = Number(value);
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(
-    Number.isFinite(n) ? n : 0
-  );
+// Companies can each carry a different currency, so a single blended sum
+// across all of them would be misleading (adding USD to INR is meaningless).
+// Group and sum per currency instead, and show one figure per currency
+// actually in use.
+function sumByCurrency(companies, field) {
+  const totals = {};
+  for (const c of companies) {
+    const currency = c.currency || 'USD';
+    totals[currency] = (totals[currency] || 0) + Number(c[field] || 0);
+  }
+  return totals;
 }
 
 export default function Dashboard() {
@@ -38,8 +45,8 @@ export default function Dashboard() {
   }, []);
 
   const isAdmin = user?.role === 'admin';
-  const totalCommitted = companies.reduce((sum, c) => sum + Number(c.capital_committed || 0), 0);
   const activeCount = companies.filter((c) => c.status === 'active').length;
+  const committedByCurrency = !isAdmin ? sumByCurrency(companies, 'capital_committed') : {};
 
   return (
     <div>
@@ -67,12 +74,15 @@ export default function Dashboard() {
             <div className="label">Active</div>
             <div className="value">{activeCount}</div>
           </div>
-          {!isAdmin && (
-            <div className="stat-card">
-              <div className="label">Total Capital Committed</div>
-              <div className="value">{formatCurrency(totalCommitted)}</div>
-            </div>
-          )}
+          {!isAdmin &&
+            Object.entries(committedByCurrency).map(([currency, total]) => (
+              <div className="stat-card" key={currency}>
+                <div className="label">
+                  Capital Committed{Object.keys(committedByCurrency).length > 1 ? ` (${currency})` : ''}
+                </div>
+                <div className="value">{formatCurrency(total, currency)}</div>
+              </div>
+            ))}
         </div>
       )}
 
@@ -95,36 +105,58 @@ export default function Dashboard() {
         )}
 
         {!loading && companies.length > 0 && (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Company</th>
-                <th>Industry</th>
-                <th>Status</th>
-                {!isAdmin && <th style={{ textAlign: 'right' }}>Your Stake</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {companies.slice(0, 6).map((c) => (
-                <tr
-                  key={c.id}
-                  className="clickable"
-                  onClick={() => navigate(`/dashboard/companies/${c.id}`)}
-                >
-                  <td>{c.name}</td>
-                  <td>{c.industry || '—'}</td>
-                  <td>
-                    <span className={`badge ${c.status}`}>{c.status}</span>
-                  </td>
-                  {!isAdmin && (
-                    <td className="num">
-                      {c.ownership_percentage ? `${Number(c.ownership_percentage)}%` : '—'}
-                    </td>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Company</th>
+                  <th>Status</th>
+                  {isAdmin ? (
+                    <>
+                      <th className="num">Total Sales</th>
+                      <th className="num">Total Invested</th>
+                      <th className="num">Returns Received</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="num">Invested</th>
+                      <th className="num">Returns %</th>
+                      <th className="num">Received So Far</th>
+                      <th className="num">Pending</th>
+                    </>
                   )}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {companies.slice(0, 6).map((c) => (
+                  <tr
+                    key={c.id}
+                    className="clickable"
+                    onClick={() => navigate(`/dashboard/companies/${c.id}`)}
+                  >
+                    <td>{c.name}</td>
+                    <td>
+                      <span className={`badge ${c.status}`}>{c.status}</span>
+                    </td>
+                    {isAdmin ? (
+                      <>
+                        <td className="num">{formatCurrency(c.total_sales, c.currency)}</td>
+                        <td className="num">{formatCurrency(c.total_invested, c.currency)}</td>
+                        <td className="num">{formatCurrency(c.total_returns_received, c.currency)}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="num">{formatCurrency(c.capital_committed, c.currency)}</td>
+                        <td className="num">{Number(c.returns_percent || 0).toFixed(1)}%</td>
+                        <td className="num">{formatCurrency(c.returns_received_so_far, c.currency)}</td>
+                        <td className="num">{formatCurrency(c.pending_to_receive, c.currency)}</td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

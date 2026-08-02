@@ -10,6 +10,12 @@ import {
   deleteCompanyInvestor,
 } from '../controllers/companyController.js';
 import { getSales, postSale, removeSale } from '../controllers/salesController.js';
+import { getReturns, postReturn, removeReturn } from '../controllers/returnsController.js';
+import {
+  getDistributions,
+  postDistribution,
+  removeDistribution,
+} from '../controllers/distributionsController.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
@@ -32,5 +38,17 @@ router.delete('/:id/investors/:investorId', requireRole('admin'), asyncHandler(d
 router.get('/:id/sales', asyncHandler(getSales));
 router.post('/:id/sales', requireRole('admin'), asyncHandler(postSale));
 router.delete('/:id/sales/:saleId', requireRole('admin'), asyncHandler(removeSale));
+
+// Returns-received is the internal "money came back to the holding co"
+// ledger — admin-only end to end, on purpose.
+router.get('/:id/returns', requireRole('admin'), asyncHandler(getReturns));
+router.post('/:id/returns', requireRole('admin'), asyncHandler(postReturn));
+router.delete('/:id/returns/:returnId', requireRole('admin'), asyncHandler(removeReturn));
+
+// Distributions is "money paid out to a specific investor" — admin
+// manages it, investors can view (only their own, enforced in the model).
+router.get('/:id/distributions', asyncHandler(getDistributions));
+router.post('/:id/distributions', requireRole('admin'), asyncHandler(postDistribution));
+router.delete('/:id/distributions/:distributionId', requireRole('admin'), asyncHandler(removeDistribution));
 
 export default router;

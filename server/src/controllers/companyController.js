@@ -27,11 +27,14 @@ export async function getCompany(req, res) {
 
 // POST /api/companies (admin only)
 export async function postCompany(req, res) {
-  const { name, description, industry } = req.body;
+  const { name, description, industry, currency } = req.body;
   if (!name) {
     return res.status(400).json({ error: 'Company name is required.' });
   }
-  const company = await createCompany({ name, description, industry, createdBy: req.user.id });
+  if (currency && !['USD', 'INR', 'QAR'].includes(currency)) {
+    return res.status(400).json({ error: 'Currency must be USD, INR, or QAR.' });
+  }
+  const company = await createCompany({ name, description, industry, currency, createdBy: req.user.id });
   return res.status(201).json({ company });
 }
 

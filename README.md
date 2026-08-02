@@ -27,6 +27,20 @@ database before being handed to you.
 - **Sales** — admins can log dated sales entries per company with a running
   total; investors linked to that company can view (not edit) the same
   list.
+- **Currency per company** — each company is priced in USD, INR, or QAR;
+  every dollar figure on that company's pages formats in its own currency.
+- **Returns received** — admin-only ledger of money the holding company
+  gets back from a portfolio company. Never shown to investors directly.
+- **Distributions** — admin records money actually paid out to a specific
+  investor; each investor sees only their own payouts, never another
+  investor's.
+- **Investor financial view** — for each company they hold, an investor
+  sees their capital committed, a returns %, what they've received so far,
+  and what's still pending (computed from returns received × their
+  ownership %, minus what's already been distributed to them).
+- **Admin dashboard totals** — the Overview page and each company's page
+  show total sales, total invested, and total returns received per
+  company — visible to admins only.
 
 ## What's not built yet
 
