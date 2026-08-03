@@ -1,0 +1,25 @@
+# Brings up a local Postgres for development. The API and the client run
+# with plain `npm run dev` — only the database is containerized, so you get
+# a consistent DB without installing Postgres on your machine, and normal
+# fast-refresh dev servers for the app itself.
+#
+# Usage:
+#   docker compose up -d
+#   psql postgresql://postgres:postgres@localhost:5432/jn_venture_os -f database/schema.sql
+#   psql postgresql://postgres:postgres@localhost:5432/jn_venture_os -f database/seed.sql
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jn_venture_os
+    ports:
+      - '5432:5432'
+    volumes:
+      - jn_venture_os_pgdata:/var/lib/postgresql/data
+
+volumes:
+  jn_venture_os_pgdata:
