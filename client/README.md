@@ -11,9 +11,9 @@ database before being handed to you.
 - **Branding** — Evercrest Holdings' actual logo, colors (Midnight Navy /
   Gold / Champagne / Ivory), and typography (Cormorant Garamond +
   Montserrat), taken from the brand book. A dedicated **Home** page is
-  the first thing anyone sees after logging in — logo, your Story and
-  Vision (edited from Settings), then a button through to the real
-  financial Overview.
+  the first thing anyone sees after logging in — logo, Purpose, Vision,
+  Mission, Promise, Story, and Core Values (all edited from Settings),
+  then a button through to the real financial Overview.
 
 - **Auth** — JWT login, bcrypt password hashing, no public self-signup
   (admins create accounts).

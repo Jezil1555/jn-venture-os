@@ -38,7 +38,54 @@
   font-style: italic;
   font-size: var(--step-md);
   color: var(--champagne);
+  margin: 0 0 1.25rem;
+}
+
+.home-purpose {
+  font-family: var(--font-display);
+  font-size: var(--step-lg);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--paper);
   margin: 0 0 2.5rem;
+}
+
+.home-promise {
+  position: relative;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--step-md);
+  line-height: 1.5;
+  color: var(--brass-bright);
+  max-width: 46ch;
+  margin: 0 auto 2rem;
+}
+
+.home-promise span {
+  font-size: 1.6em;
+  line-height: 0;
+  vertical-align: -0.35em;
+  margin-right: 0.15rem;
+  opacity: 0.7;
+}
+
+.home-values {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 2.5rem;
+}
+
+.home-value-tag {
+  font-family: var(--font-mono);
+  font-size: var(--step-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--champagne);
+  border: 1px solid var(--line-dark);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
 }
 
 .home-block {
