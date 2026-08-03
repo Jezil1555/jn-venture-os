@@ -26,9 +26,9 @@
 }
 
 .stat-card.tone-brass { border-left-color: var(--brass); }
-.stat-card.tone-teal { border-left-color: var(--accent-teal); }
+.stat-card.tone-navy { border-left-color: var(--accent-navy); }
 .stat-card.tone-amber { border-left-color: var(--accent-amber); }
-.stat-card.tone-violet { border-left-color: var(--accent-violet); }
+.stat-card.tone-champagne { border-left-color: var(--accent-champagne); }
 .stat-card.tone-positive { border-left-color: var(--positive); }
 
 .stat-card .label-row {
@@ -43,9 +43,9 @@
 }
 
 .stat-card.tone-brass .label-row svg { color: var(--brass); }
-.stat-card.tone-teal .label-row svg { color: var(--accent-teal); }
+.stat-card.tone-navy .label-row svg { color: var(--accent-navy); }
 .stat-card.tone-amber .label-row svg { color: var(--accent-amber); }
-.stat-card.tone-violet .label-row svg { color: var(--accent-violet); }
+.stat-card.tone-champagne .label-row svg { color: var(--accent-champagne); }
 .stat-card.tone-positive .label-row svg { color: var(--positive); }
 
 .stat-card .label {

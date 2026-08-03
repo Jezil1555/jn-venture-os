@@ -4,7 +4,8 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Layout from './components/Layout.jsx';
 import Login from './pages/Login.jsx';
-import Dashboard from './pages/Dashboard.jsx';
+import Home from './pages/Home.jsx';
+import Overview from './pages/Overview.jsx';
 import Companies from './pages/Companies.jsx';
 import CompanyDetail from './pages/CompanyDetail.jsx';
 import Account from './pages/Account.jsx';
@@ -27,7 +28,8 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Dashboard />} />
+          <Route index element={<Home />} />
+          <Route path="overview" element={<Overview />} />
           <Route path="companies" element={<Companies />} />
           <Route path="companies/:id" element={<CompanyDetail />} />
           <Route path="account" element={<Account />} />

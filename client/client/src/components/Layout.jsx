@@ -1,11 +1,12 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Building2, UserCircle, Users, Settings } from 'lucide-react';
+import { Home, LayoutGrid, Building2, UserCircle, Users, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import './Layout.css';
 
 const BASE_NAV_ITEMS = [
-  { to: '/dashboard', label: 'Overview', end: true, icon: LayoutGrid },
+  { to: '/dashboard', label: 'Home', end: true, icon: Home },
+  { to: '/dashboard/overview', label: 'Overview', icon: LayoutGrid },
   { to: '/dashboard/companies', label: 'Companies', icon: Building2 },
   { to: '/dashboard/account', label: 'Account', icon: UserCircle },
 ];
@@ -29,7 +30,10 @@ export default function Layout() {
     <div className="shell">
       <aside className="sidebar">
         <div className="sidebar-mark">
-          JN Venture<span>OS</span>
+          <img src="/evercrest-mark.png" alt="" className="sidebar-mark-icon" />
+          <span>
+            EVER<span className="accent">CREST</span>
+          </span>
         </div>
 
         <nav className="sidebar-nav">

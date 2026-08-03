@@ -125,9 +125,9 @@ CREATE TABLE IF NOT EXISTS org_settings (
 INSERT INTO org_settings (id, tagline, brand_story, vision)
 VALUES (
     1,
-    'One ledger for every company you hold, and every investor who holds a piece of it.',
-    'Write a short paragraph here about how the holding company got started and what it stands for — edited from Settings, in the app, by an admin.',
-    'Write a sentence or two here about where the holding company is headed — also edited from Settings.'
+    'Enduring Trust. Lasting Value.',
+    'Evercrest Holdings was founded on one belief: trust is the most valuable asset any business can possess. We acquire, build and grow businesses with patience rather than speculation. Our ambition is not simply to own companies, but to strengthen them and leave them better for future generations.',
+    'To become one of the world''s most trusted holding companies, building exceptional businesses that create lasting prosperity for generations.'
 )
 ON CONFLICT (id) DO NOTHING;
 
