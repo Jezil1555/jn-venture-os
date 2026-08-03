@@ -35,5 +35,5 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`JN Venture OS API listening on port ${PORT}`);
+  console.log(`Evercrest Holdings API listening on port ${PORT}`);
 });

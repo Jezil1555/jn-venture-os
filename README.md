@@ -1,4 +1,4 @@
-# JN Venture OS
+# Evercrest Holdings — Investor Platform
 
 Internal operations platform for a holding company: manage portfolio
 companies, control which investors can see which company, and track each
@@ -7,6 +7,13 @@ everything described below has been tested against an actual Postgres
 database before being handed to you.
 
 ## What's built (Session 1)
+
+- **Branding** — Evercrest Holdings' actual logo, colors (Midnight Navy /
+  Gold / Champagne / Ivory), and typography (Cormorant Garamond +
+  Montserrat), taken from the brand book. A dedicated **Home** page is
+  the first thing anyone sees after logging in — logo, Purpose, Vision,
+  Mission, Promise, Story, and Core Values (all edited from Settings),
+  then a button through to the real financial Overview.
 
 - **Auth** — JWT login, bcrypt password hashing, no public self-signup
   (admins create accounts).

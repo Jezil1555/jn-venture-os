@@ -1,50 +1,55 @@
 /*
-  JN Venture OS — design tokens.
+  Evercrest Holdings — design tokens.
 
-  Direction: a holding company's internal ledger, not a consumer app.
-  Ink-navy + brass reads like an account book; the hairline "ledger rule"
-  pattern (see .ledger-rules) is the one signature motif, used sparingly.
+  Palette and type are taken directly from the brand book: Midnight Navy,
+  Gold, Champagne, Ivory; Cormorant Garamond for display, Montserrat for
+  body. IBM Plex Mono is kept for financial figures specifically — the
+  brand book doesn't specify a numeric face, and tabular-figure support
+  matters more than brand-matching for a column of dollar amounts.
 */
 
-@import '@fontsource/fraunces/500.css';
-@import '@fontsource/fraunces/600.css';
-@import '@fontsource/fraunces/500-italic.css';
-@import '@fontsource/ibm-plex-sans/400.css';
-@import '@fontsource/ibm-plex-sans/500.css';
-@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/cormorant-garamond/500.css';
+@import '@fontsource/cormorant-garamond/600.css';
+@import '@fontsource/cormorant-garamond/500-italic.css';
+@import '@fontsource/montserrat/400.css';
+@import '@fontsource/montserrat/500.css';
+@import '@fontsource/montserrat/600.css';
 @import '@fontsource/ibm-plex-mono/400.css';
 @import '@fontsource/ibm-plex-mono/500.css';
 
 :root {
-  /* Color */
-  --ink: #0f1a2b;
-  --ink-raised: #16233a;
-  --paper: #f7f5f0;
-  --paper-dim: #efece4;
-  --brass: #b08d57;
-  --brass-bright: #c9a56d;
+  /* Color — from the Evercrest Holdings brand book */
+  --ink: #081320; /* Midnight Navy */
+  --ink-raised: #10233a;
+  --paper: #f6f4ef; /* Ivory */
+  --paper-dim: #ede7d8;
+  --brass: #c9a227; /* Gold */
+  --brass-bright: #ddbc55;
+  --champagne: #e7d8b2;
+  --champagne-deep: #b89b68;
   --slate: #5b6472;
   --slate-light: #8b93a0;
-  --line: #dfdacd;
-  --line-dark: #2a3852;
+  --line: #e2dac0;
+  --line-dark: #1c2e42;
   --positive: #2e6f52;
   --negative: #a63d40;
   --white: #ffffff;
 
-  /* Accent set — used to visually distinguish metric types (sales,
-     invested, returns, pending) so the dashboard reads with more color
-     without abandoning the ledger palette above. */
-  --accent-amber: #c2703d;
-  --accent-amber-tint: #fbeee3;
-  --accent-teal: #2b7a8c;
-  --accent-teal-tint: #e3f0f2;
-  --accent-violet: #6b5b95;
-  --accent-violet-tint: #ece8f3;
-  --accent-brass-tint: #f5ecdc;
+  /* Accent set for distinguishing metric types on the dashboard — kept
+     within the brand family (gold / navy / champagne) rather than
+     introducing outside hues, per the brand book's restrained, premium
+     positioning. */
+  --accent-amber: #c9a227;
+  --accent-amber-tint: #f6ecd2;
+  --accent-navy: #2c4a66;
+  --accent-navy-tint: #e6ebf0;
+  --accent-champagne: #8a7248;
+  --accent-champagne-tint: #f0e9d8;
+  --accent-brass-tint: #f6ecd2;
 
   /* Type */
-  --font-display: 'Fraunces', 'Iowan Old Style', ui-serif, Georgia, serif;
-  --font-body: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Cormorant Garamond', 'Iowan Old Style', ui-serif, Georgia, serif;
+  --font-body: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
 
   /* Scale */
@@ -60,7 +65,7 @@
   --radius-sm: 3px;
   --radius-md: 6px;
   --sidebar-width: 248px;
-  --shadow-card: 0 1px 2px rgba(15, 26, 43, 0.06), 0 8px 24px -12px rgba(15, 26, 43, 0.18);
+  --shadow-card: 0 1px 2px rgba(8, 19, 32, 0.06), 0 8px 24px -12px rgba(8, 19, 32, 0.18);
 }
 
 * {

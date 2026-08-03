@@ -9,7 +9,7 @@ export async function get(req, res) {
 
 // PATCH /api/settings — admin only.
 export async function patch(req, res) {
-  const { tagline, brandStory, vision } = req.body;
-  const settings = await updateSettings({ tagline, brandStory, vision });
+  const { tagline, purpose, vision, mission, promise, brandStory, coreValues } = req.body;
+  const settings = await updateSettings({ tagline, purpose, vision, mission, promise, brandStory, coreValues });
   return res.json({ settings });
 }

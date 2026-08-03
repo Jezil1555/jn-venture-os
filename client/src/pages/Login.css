@@ -36,15 +36,11 @@
   z-index: 1;
 }
 
-.login-brand-mark .wordmark {
-  font-family: var(--font-display);
-  font-size: var(--step-xl);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-.login-brand-mark .wordmark span {
-  color: var(--brass-bright);
+.login-logo {
+  max-width: 280px;
+  width: 70%;
+  height: auto;
+  display: block;
 }
 
 .login-brand-tag {

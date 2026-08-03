@@ -396,7 +396,7 @@ export default function CompanyDetail() {
             </div>
             <div className="value">{formatCurrency(company.total_sales, currency)}</div>
           </div>
-          <div className="stat-card tone-teal">
+          <div className="stat-card tone-navy">
             <div className="label-row">
               <Wallet size={15} />
               <div className="label">Total Invested</div>
@@ -415,7 +415,7 @@ export default function CompanyDetail() {
 
       {!isAdmin && company.ownership_percentage !== undefined && (
         <div className="stat-grid">
-          <div className="stat-card tone-teal">
+          <div className="stat-card tone-navy">
             <div className="label-row">
               <PieChart size={15} />
               <div className="label">Your Ownership</div>
@@ -429,7 +429,7 @@ export default function CompanyDetail() {
             </div>
             <div className="value">{formatCurrency(company.capital_committed, currency)}</div>
           </div>
-          <div className="stat-card tone-violet">
+          <div className="stat-card tone-champagne">
             <div className="label-row">
               <TrendingUp size={15} />
               <div className="label">Returns %</div>
