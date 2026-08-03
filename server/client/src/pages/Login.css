@@ -36,13 +36,6 @@
   z-index: 1;
 }
 
-.login-logo {
-  max-width: 280px;
-  width: 70%;
-  height: auto;
-  display: block;
-}
-
 .login-brand-tag {
   position: relative;
   z-index: 1;
