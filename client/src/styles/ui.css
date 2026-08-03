@@ -19,9 +19,33 @@
 .stat-card {
   background: var(--white);
   border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
   border-radius: var(--radius-md);
   padding: 1.25rem 1.4rem;
 }
+
+.stat-card.tone-brass { border-left-color: var(--brass); }
+.stat-card.tone-teal { border-left-color: var(--accent-teal); }
+.stat-card.tone-amber { border-left-color: var(--accent-amber); }
+.stat-card.tone-violet { border-left-color: var(--accent-violet); }
+.stat-card.tone-positive { border-left-color: var(--positive); }
+
+.stat-card .label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card .label-row svg {
+  flex-shrink: 0;
+}
+
+.stat-card.tone-brass .label-row svg { color: var(--brass); }
+.stat-card.tone-teal .label-row svg { color: var(--accent-teal); }
+.stat-card.tone-amber .label-row svg { color: var(--accent-amber); }
+.stat-card.tone-violet .label-row svg { color: var(--accent-violet); }
+.stat-card.tone-positive .label-row svg { color: var(--positive); }
 
 .stat-card .label {
   font-size: var(--step-xs);

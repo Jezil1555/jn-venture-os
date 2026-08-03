@@ -54,6 +54,18 @@ database before being handed to you.
   vision from Settings; investors see it as a hero section at the top of
   their Overview page. This is real content you write yourself, not
   fixed copy.
+- **Edit your own name and email** — from Account. This is what makes the
+  "Welcome back" greeting personal, and lets you replace the seed
+  `.test` email addresses with real ones (the app never sends mail, so
+  email here is only a login ID — any real address works).
+- **Safer company deletion** — instead of a plain OK/Cancel popup, you
+  now have to type the company's exact name to enable the delete button.
+- **Bulk import sales from Excel/CSV** — on a company's page, "Import
+  from Excel / CSV" accepts a spreadsheet with Date, Amount, and
+  (optional) Notes columns, shows a preview of what parsed correctly and
+  what didn't before you commit, and inserts everything in one
+  transaction (so a bad row can't leave you with a half-finished import).
+  A "Download template" button shows the expected format.
 
 ## What's not built yet
 

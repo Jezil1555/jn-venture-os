@@ -4,34 +4,56 @@ import { useAuth } from '../context/AuthContext.jsx';
 import '../styles/ui.css';
 
 export default function Account() {
-  const { user } = useAuth();
-  const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const { user, updateUser } = useAuth();
 
-  async function handleSubmit(e) {
+  const [profileForm, setProfileForm] = useState({ name: user?.name || '', email: user?.email || '' });
+  const [profileError, setProfileError] = useState(null);
+  const [profileSuccess, setProfileSuccess] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordError, setPasswordError] = useState(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  async function handleProfileSubmit(e) {
     e.preventDefault();
-    setError(null);
-    setSuccess(false);
+    setProfileError(null);
+    setProfileSuccess(false);
+    setSavingProfile(true);
+    try {
+      const { data } = await api.patch('/auth/profile', profileForm);
+      updateUser(data.user);
+      setProfileSuccess(true);
+    } catch (err) {
+      setProfileError(err.response?.data?.error || 'Could not save your profile.');
+    } finally {
+      setSavingProfile(false);
+    }
+  }
 
-    if (form.newPassword !== form.confirmPassword) {
-      setError('New password and confirmation do not match.');
+  async function handlePasswordSubmit(e) {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccess(false);
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('New password and confirmation do not match.');
       return;
     }
 
-    setSaving(true);
+    setSavingPassword(true);
     try {
       await api.patch('/auth/password', {
-        currentPassword: form.currentPassword,
-        newPassword: form.newPassword,
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
       });
-      setSuccess(true);
-      setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordSuccess(true);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
-      setError(err.response?.data?.error || 'Could not change your password.');
+      setPasswordError(err.response?.data?.error || 'Could not change your password.');
     } finally {
-      setSaving(false);
+      setSavingPassword(false);
     }
   }
 
@@ -45,11 +67,63 @@ export default function Account() {
         </div>
       </div>
 
+      <div className="card card-pad" style={{ maxWidth: 420, marginBottom: '1.5rem' }}>
+        <div className="section-title">Profile</div>
+        <p style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)', margin: '0 0 1rem' }}>
+          Your name is what everyone sees across the app — including the "Welcome back" greeting.
+          Your email is what you log in with.
+        </p>
+
+        {profileError && <div className="banner-error">{profileError}</div>}
+        {profileSuccess && (
+          <div
+            style={{
+              background: '#e5f0ea',
+              color: 'var(--positive)',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--step-sm)',
+              marginBottom: '1.25rem',
+            }}
+          >
+            Saved.
+          </div>
+        )}
+
+        <form className="form-grid" onSubmit={handleProfileSubmit}>
+          <div className="field">
+            <label htmlFor="profileName">Name</label>
+            <input
+              id="profileName"
+              value={profileForm.name}
+              onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="profileEmail">Email</label>
+            <input
+              id="profileEmail"
+              type="email"
+              value={profileForm.email}
+              onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+              required
+            />
+            <p style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)', margin: '0.35rem 0 0' }}>
+              Use your real email here — the app doesn't send mail to it, it's just your login ID.
+            </p>
+          </div>
+          <button className="btn btn-dark" type="submit" disabled={savingProfile} style={{ width: 'fit-content' }}>
+            {savingProfile ? 'Saving…' : 'Save Profile'}
+          </button>
+        </form>
+      </div>
+
       <div className="card card-pad" style={{ maxWidth: 420 }}>
         <div className="section-title">Change Password</div>
 
-        {error && <div className="banner-error">{error}</div>}
-        {success && (
+        {passwordError && <div className="banner-error">{passwordError}</div>}
+        {passwordSuccess && (
           <div
             style={{
               background: '#e5f0ea',
@@ -64,15 +138,15 @@ export default function Account() {
           </div>
         )}
 
-        <form className="form-grid" onSubmit={handleSubmit}>
+        <form className="form-grid" onSubmit={handlePasswordSubmit}>
           <div className="field">
             <label htmlFor="currentPassword">Current Password</label>
             <input
               id="currentPassword"
               type="password"
               autoComplete="current-password"
-              value={form.currentPassword}
-              onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
+              value={passwordForm.currentPassword}
+              onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
               required
             />
           </div>
@@ -82,8 +156,8 @@ export default function Account() {
               id="newPassword"
               type="password"
               autoComplete="new-password"
-              value={form.newPassword}
-              onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
+              value={passwordForm.newPassword}
+              onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
               minLength={8}
               required
             />
@@ -94,14 +168,14 @@ export default function Account() {
               id="confirmPassword"
               type="password"
               autoComplete="new-password"
-              value={form.confirmPassword}
-              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+              value={passwordForm.confirmPassword}
+              onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
               minLength={8}
               required
             />
           </div>
-          <button className="btn btn-dark" type="submit" disabled={saving} style={{ width: 'fit-content' }}>
-            {saving ? 'Saving…' : 'Change Password'}
+          <button className="btn btn-dark" type="submit" disabled={savingPassword} style={{ width: 'fit-content' }}>
+            {savingPassword ? 'Saving…' : 'Change Password'}
           </button>
         </form>
       </div>

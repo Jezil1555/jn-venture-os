@@ -19,7 +19,7 @@ if (missing.length > 0) {
 const app = express();
 
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'jn-venture-os-api' });

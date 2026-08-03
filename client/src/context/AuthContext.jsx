@@ -44,8 +44,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  // Called after a successful profile edit so "Welcome back, X" and the
+  // sidebar update immediately, without forcing a re-login.
+  const updateUser = useCallback((updatedUser) => {
+    setUser(updatedUser);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, error, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

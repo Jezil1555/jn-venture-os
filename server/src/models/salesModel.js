@@ -1,4 +1,5 @@
 import { query } from '../config/db.js';
+import pool from '../config/db.js';
 
 export async function listSalesForCompany(companyId, { from, to } = {}) {
   const conditions = ['company_id = $1'];
@@ -73,4 +74,29 @@ export async function salesThisMonthForCompany(companyId) {
     [companyId]
   );
   return Number(rows[0].total);
+}
+
+// Used for spreadsheet imports — inserts many rows in one transaction so
+// a mid-import failure can't leave the company with half-imported data.
+export async function bulkCreateSales(companyId, rows, createdBy) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    let inserted = 0;
+    for (const row of rows) {
+      await client.query(
+        `INSERT INTO sales (company_id, sale_date, amount, notes, created_by)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [companyId, row.saleDate, row.amount, row.notes || null, createdBy]
+      );
+      inserted += 1;
+    }
+    await client.query('COMMIT');
+    return inserted;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }

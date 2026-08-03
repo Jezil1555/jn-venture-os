@@ -31,6 +31,17 @@
   --negative: #a63d40;
   --white: #ffffff;
 
+  /* Accent set — used to visually distinguish metric types (sales,
+     invested, returns, pending) so the dashboard reads with more color
+     without abandoning the ledger palette above. */
+  --accent-amber: #c2703d;
+  --accent-amber-tint: #fbeee3;
+  --accent-teal: #2b7a8c;
+  --accent-teal-tint: #e3f0f2;
+  --accent-violet: #6b5b95;
+  --accent-violet-tint: #ece8f3;
+  --accent-brass-tint: #f5ecdc;
+
   /* Type */
   --font-display: 'Fraunces', 'Iowan Old Style', ui-serif, Georgia, serif;
   --font-body: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;

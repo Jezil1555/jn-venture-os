@@ -9,7 +9,7 @@ import {
   putCompanyInvestor,
   deleteCompanyInvestor,
 } from '../controllers/companyController.js';
-import { getSales, postSale, removeSale } from '../controllers/salesController.js';
+import { getSales, postSale, postBulkSales, removeSale } from '../controllers/salesController.js';
 import { getReturns, postReturn, removeReturn } from '../controllers/returnsController.js';
 import {
   getDistributions,
@@ -38,6 +38,7 @@ router.delete('/:id/investors/:investorId', requireRole('admin'), asyncHandler(d
 
 router.get('/:id/sales', asyncHandler(getSales));
 router.post('/:id/sales', requireRole('admin'), asyncHandler(postSale));
+router.post('/:id/sales/bulk', requireRole('admin'), asyncHandler(postBulkSales));
 router.delete('/:id/sales/:saleId', requireRole('admin'), asyncHandler(removeSale));
 
 // Returns-received is the internal "money came back to the holding co"

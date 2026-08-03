@@ -39,14 +39,22 @@
 }
 
 .sidebar-nav a {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   text-decoration: none;
   color: var(--slate-light);
   font-size: var(--step-sm);
   font-weight: 500;
   padding: 0.6rem 0.75rem;
   border-radius: var(--radius-sm);
-  transition: background 120ms ease, color 120ms ease;
+  border-left: 3px solid transparent;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.sidebar-nav a svg {
+  flex-shrink: 0;
+  opacity: 0.85;
 }
 
 .sidebar-nav a:hover {
@@ -57,6 +65,7 @@
 .sidebar-nav a.active {
   background: var(--ink-raised);
   color: var(--brass-bright);
+  border-left-color: var(--brass);
 }
 
 .sidebar-user {

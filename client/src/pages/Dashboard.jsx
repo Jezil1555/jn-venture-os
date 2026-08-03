@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Building2, CheckCircle2, Wallet } from 'lucide-react';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatCurrency } from '../utils/currency.js';
@@ -115,18 +116,35 @@ export default function Dashboard() {
       {!loading && (
         <div className="chip-row">
           <div className="chip">
-            <span className="chip-value">{companies.length}</span>
-            <span className="chip-label">{isAdmin ? 'Companies' : 'Held'}</span>
+            <span className="chip-icon tone-brass">
+              <Building2 size={16} />
+            </span>
+            <span className="chip-text">
+              <span className="chip-value">{companies.length}</span>
+              <span className="chip-label">{isAdmin ? 'Companies' : 'Held'}</span>
+            </span>
           </div>
           <div className="chip">
-            <span className="chip-value">{activeCount}</span>
-            <span className="chip-label">Active</span>
+            <span className="chip-icon tone-teal">
+              <CheckCircle2 size={16} />
+            </span>
+            <span className="chip-text">
+              <span className="chip-value">{activeCount}</span>
+              <span className="chip-label">Active</span>
+            </span>
           </div>
           {!isAdmin &&
             Object.entries(committedByCurrency).map(([currency, total]) => (
               <div className="chip" key={currency}>
-                <span className="chip-value mono">{formatCurrency(total, currency)}</span>
-                <span className="chip-label">Committed{Object.keys(committedByCurrency).length > 1 ? ` · ${currency}` : ''}</span>
+                <span className="chip-icon tone-amber">
+                  <Wallet size={16} />
+                </span>
+                <span className="chip-text">
+                  <span className="chip-value mono">{formatCurrency(total, currency)}</span>
+                  <span className="chip-label">
+                    Committed{Object.keys(committedByCurrency).length > 1 ? ` · ${currency}` : ''}
+                  </span>
+                </span>
               </div>
             ))}
         </div>

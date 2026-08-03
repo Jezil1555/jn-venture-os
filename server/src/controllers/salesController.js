@@ -1,5 +1,14 @@
 import { getCompanyByIdForUser } from '../models/companyModel.js';
-import { listSalesForCompany, createSale, deleteSale, totalSalesForCompany } from '../models/salesModel.js';
+import {
+  listSalesForCompany,
+  createSale,
+  deleteSale,
+  totalSalesForCompany,
+  bulkCreateSales,
+} from '../models/salesModel.js';
+
+const MAX_BULK_ROWS = 5000;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // Sales are viewed through the same lens as the company itself: admins see
 // any company's sales, investors only see sales for a company they're
@@ -49,6 +58,52 @@ export async function postSale(req, res) {
     createdBy: req.user.id,
   });
   return res.status(201).json({ sale });
+}
+
+// POST /api/companies/:id/sales/bulk (admin only)
+// Body: { sales: [{ saleDate: 'YYYY-MM-DD', amount: number, notes?: string }, ...] }
+// The client is expected to have already parsed and validated the
+// spreadsheet — this endpoint re-validates anyway, since a client bug or
+// a hand-crafted request shouldn't be able to write bad rows.
+export async function postBulkSales(req, res) {
+  const { sales } = req.body;
+
+  if (!Array.isArray(sales) || sales.length === 0) {
+    return res.status(400).json({ error: 'No rows to import.' });
+  }
+  if (sales.length > MAX_BULK_ROWS) {
+    return res.status(400).json({ error: `Cannot import more than ${MAX_BULK_ROWS} rows at once.` });
+  }
+
+  const cleanRows = [];
+  const rowErrors = [];
+
+  sales.forEach((row, index) => {
+    const lineNo = index + 1;
+    if (!row || typeof row !== 'object') {
+      rowErrors.push({ row: lineNo, error: 'Malformed row.' });
+      return;
+    }
+    if (!DATE_RE.test(row.saleDate)) {
+      rowErrors.push({ row: lineNo, error: 'Date must be in YYYY-MM-DD format.' });
+      return;
+    }
+    const amount = Number(row.amount);
+    if (Number.isNaN(amount) || amount < 0) {
+      rowErrors.push({ row: lineNo, error: 'Amount must be a non-negative number.' });
+      return;
+    }
+    cleanRows.push({ saleDate: row.saleDate, amount, notes: row.notes ? String(row.notes).slice(0, 500) : null });
+  });
+
+  if (rowErrors.length > 0) {
+    return res.status(400).json({ error: 'Some rows failed validation.', rowErrors });
+  }
+
+  await assertCanViewCompany(req.params.id, req.user);
+
+  const inserted = await bulkCreateSales(req.params.id, cleanRows, req.user.id);
+  return res.status(201).json({ inserted });
 }
 
 // DELETE /api/companies/:id/sales/:saleId (admin only)

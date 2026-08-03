@@ -1,17 +1,18 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { LayoutGrid, Building2, UserCircle, Users, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import './Layout.css';
 
 const BASE_NAV_ITEMS = [
-  { to: '/dashboard', label: 'Overview', end: true },
-  { to: '/dashboard/companies', label: 'Companies' },
-  { to: '/dashboard/account', label: 'Account' },
+  { to: '/dashboard', label: 'Overview', end: true, icon: LayoutGrid },
+  { to: '/dashboard/companies', label: 'Companies', icon: Building2 },
+  { to: '/dashboard/account', label: 'Account', icon: UserCircle },
 ];
 
 const ADMIN_NAV_ITEMS = [
-  { to: '/dashboard/users', label: 'Users' },
-  { to: '/dashboard/settings', label: 'Settings' },
+  { to: '/dashboard/users', label: 'Users', icon: Users },
+  { to: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function Layout() {
@@ -32,16 +33,20 @@ export default function Layout() {
         </div>
 
         <nav className="sidebar-nav">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => (isActive ? 'active' : undefined)}
-            >
-              {item.label}
-            </NavLink>
-          ))}
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) => (isActive ? 'active' : undefined)}
+              >
+                <Icon size={17} />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
         </nav>
 
         <div className="sidebar-user">

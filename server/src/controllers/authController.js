@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/db.js';
-import { findUserByEmail, findUserById, createUser } from '../models/userModel.js';
+import { findUserByEmail, findUserById, createUser, updateUserProfile } from '../models/userModel.js';
 
 const TOKEN_TTL = '12h';
 const SALT_ROUNDS = 10;
@@ -80,6 +80,33 @@ export async function me(req, res) {
     return res.status(404).json({ error: 'User not found.' });
   }
   return res.json({ user });
+}
+
+// PATCH /api/auth/profile
+// Anyone can update their own display name and email — this is how the
+// seed accounts (real name, real .test-domain-free email) get replaced
+// with actual identities, since there's no separate "invite" flow.
+export async function updateProfile(req, res) {
+  const { name, email } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Name is required.' });
+  }
+  if (!email || !email.trim()) {
+    return res.status(400).json({ error: 'Email is required.' });
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const existing = await findUserByEmail(normalizedEmail);
+  if (existing && existing.id !== req.user.id) {
+    return res.status(409).json({ error: 'Another account already uses that email.' });
+  }
+
+  const updated = await updateUserProfile(req.user.id, { name: name.trim(), email: normalizedEmail });
+  if (!updated) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+  return res.json({ user: updated });
 }
 
 // PATCH /api/auth/password

@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp, Wallet, ArrowDownToLine, PieChart, Clock } from 'lucide-react';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatCurrency, CURRENCY_OPTIONS } from '../utils/currency.js';
+import ImportSalesPanel from '../components/ImportSalesPanel.jsx';
 import '../styles/ui.css';
 
 function monthKey(dateStr) {
@@ -34,6 +36,8 @@ export default function CompanyDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [salesFilter, setSalesFilter] = useState({ from: '', to: '' });
 
@@ -310,10 +314,9 @@ export default function CompanyDetail() {
   }
 
   async function handleDeleteCompany() {
-    const confirmed = window.confirm(
-      `Delete "${company.name}"? This cannot be undone from here — sales, returns, and distribution history for this company will be removed too.`
-    );
-    if (!confirmed) return;
+    if (deleteConfirmText.trim() !== company.name) {
+      return;
+    }
     setDeleting(true);
     try {
       await api.delete(`/companies/${id}`);
@@ -386,16 +389,25 @@ export default function CompanyDetail() {
 
       {isAdmin && (
         <div className="stat-grid">
-          <div className="stat-card">
-            <div className="label">Total Sales</div>
+          <div className="stat-card tone-amber">
+            <div className="label-row">
+              <TrendingUp size={15} />
+              <div className="label">Total Sales</div>
+            </div>
             <div className="value">{formatCurrency(company.total_sales, currency)}</div>
           </div>
-          <div className="stat-card">
-            <div className="label">Total Invested</div>
+          <div className="stat-card tone-teal">
+            <div className="label-row">
+              <Wallet size={15} />
+              <div className="label">Total Invested</div>
+            </div>
             <div className="value">{formatCurrency(company.total_invested, currency)}</div>
           </div>
-          <div className="stat-card">
-            <div className="label">Returns Received</div>
+          <div className="stat-card tone-brass">
+            <div className="label-row">
+              <ArrowDownToLine size={15} />
+              <div className="label">Returns Received</div>
+            </div>
             <div className="value">{formatCurrency(company.total_returns_received, currency)}</div>
           </div>
         </div>
@@ -403,24 +415,39 @@ export default function CompanyDetail() {
 
       {!isAdmin && company.ownership_percentage !== undefined && (
         <div className="stat-grid">
-          <div className="stat-card">
-            <div className="label">Your Ownership</div>
+          <div className="stat-card tone-teal">
+            <div className="label-row">
+              <PieChart size={15} />
+              <div className="label">Your Ownership</div>
+            </div>
             <div className="value">{Number(company.ownership_percentage)}%</div>
           </div>
-          <div className="stat-card">
-            <div className="label">Capital Committed</div>
+          <div className="stat-card tone-amber">
+            <div className="label-row">
+              <Wallet size={15} />
+              <div className="label">Capital Committed</div>
+            </div>
             <div className="value">{formatCurrency(company.capital_committed, currency)}</div>
           </div>
-          <div className="stat-card">
-            <div className="label">Returns %</div>
+          <div className="stat-card tone-violet">
+            <div className="label-row">
+              <TrendingUp size={15} />
+              <div className="label">Returns %</div>
+            </div>
             <div className="value">{Number(company.returns_percent || 0).toFixed(1)}%</div>
           </div>
-          <div className="stat-card">
-            <div className="label">Received So Far</div>
+          <div className="stat-card tone-positive">
+            <div className="label-row">
+              <ArrowDownToLine size={15} />
+              <div className="label">Received So Far</div>
+            </div>
             <div className="value">{formatCurrency(company.returns_received_so_far, currency)}</div>
           </div>
-          <div className="stat-card">
-            <div className="label">Pending</div>
+          <div className="stat-card tone-brass">
+            <div className="label-row">
+              <Clock size={15} />
+              <div className="label">Pending</div>
+            </div>
             <div className="value">{formatCurrency(company.pending_to_receive, currency)}</div>
           </div>
         </div>
@@ -436,6 +463,12 @@ export default function CompanyDetail() {
             Total: {formatCurrency(salesTotal, currency)}
           </span>
         </div>
+
+        {isAdmin && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <ImportSalesPanel companyId={id} currency={currency} onImported={load} />
+          </div>
+        )}
 
         {sales.length >= 2 && (
           <div style={{ height: 180, marginBottom: '1.5rem' }}>
@@ -464,7 +497,7 @@ export default function CompanyDetail() {
                     borderRadius: 'var(--radius-sm)',
                   }}
                 />
-                <Bar dataKey="total" fill="var(--brass)" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="total" fill="var(--accent-amber)" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1014,15 +1047,56 @@ export default function CompanyDetail() {
             Deleting a company removes it and its sales, returns, and distribution history.
             Investors linked to it lose access immediately. This cannot be undone from here.
           </p>
-          <button
-            type="button"
-            className="btn"
-            style={{ background: 'var(--negative)', color: 'var(--white)' }}
-            disabled={deleting}
-            onClick={handleDeleteCompany}
-          >
-            {deleting ? 'Deleting…' : 'Delete This Company'}
-          </button>
+
+          {!showDeleteConfirm ? (
+            <button
+              type="button"
+              className="btn"
+              style={{ background: 'var(--negative)', color: 'var(--white)' }}
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              Delete This Company
+            </button>
+          ) : (
+            <div>
+              <p style={{ fontSize: 'var(--step-sm)', marginBottom: '0.75rem' }}>
+                Type <strong className="mono">{company.name}</strong> below to confirm.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder={company.name}
+                  autoFocus
+                  style={{
+                    padding: '0.6rem 0.8rem',
+                    border: '1px solid var(--negative)',
+                    borderRadius: 'var(--radius-sm)',
+                    minWidth: '220px',
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ background: 'var(--negative)', color: 'var(--white)' }}
+                  disabled={deleting || deleteConfirmText.trim() !== company.name}
+                  onClick={handleDeleteCompany}
+                >
+                  {deleting ? 'Deleting…' : 'Confirm Delete'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeleteConfirmText('');
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

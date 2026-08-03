@@ -45,3 +45,13 @@ export async function listUsers({ role } = {}) {
   );
   return rows;
 }
+
+export async function updateUserProfile(userId, { name, email }) {
+  const { rows } = await query(
+    `UPDATE users SET name = $1, email = $2, updated_at = now()
+     WHERE id = $3
+     RETURNING id, name, email, role, is_active, created_at`,
+    [name, email, userId]
+  );
+  return rows[0] || null;
+}
