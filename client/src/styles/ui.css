@@ -11,7 +11,7 @@
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
@@ -22,6 +22,7 @@
   border-left: 3px solid var(--line);
   border-radius: var(--radius-md);
   padding: 1.25rem 1.4rem;
+  min-width: 0; /* allow the card to actually shrink inside its grid track */
 }
 
 .stat-card.tone-brass { border-left-color: var(--brass); }
@@ -57,9 +58,12 @@
 
 .stat-card .value {
   font-family: var(--font-mono);
-  font-size: var(--step-xl);
+  font-size: 1.6rem;
   font-weight: 500;
   color: var(--ink);
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .section-title {
