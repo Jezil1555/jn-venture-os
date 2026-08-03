@@ -1,0 +1,132 @@
+/*
+  JN Venture OS — design tokens.
+
+  Direction: a holding company's internal ledger, not a consumer app.
+  Ink-navy + brass reads like an account book; the hairline "ledger rule"
+  pattern (see .ledger-rules) is the one signature motif, used sparingly.
+*/
+
+@import '@fontsource/fraunces/500.css';
+@import '@fontsource/fraunces/600.css';
+@import '@fontsource/fraunces/500-italic.css';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
+:root {
+  /* Color */
+  --ink: #0f1a2b;
+  --ink-raised: #16233a;
+  --paper: #f7f5f0;
+  --paper-dim: #efece4;
+  --brass: #b08d57;
+  --brass-bright: #c9a56d;
+  --slate: #5b6472;
+  --slate-light: #8b93a0;
+  --line: #dfdacd;
+  --line-dark: #2a3852;
+  --positive: #2e6f52;
+  --negative: #a63d40;
+  --white: #ffffff;
+
+  /* Accent set — used to visually distinguish metric types (sales,
+     invested, returns, pending) so the dashboard reads with more color
+     without abandoning the ledger palette above. */
+  --accent-amber: #c2703d;
+  --accent-amber-tint: #fbeee3;
+  --accent-teal: #2b7a8c;
+  --accent-teal-tint: #e3f0f2;
+  --accent-violet: #6b5b95;
+  --accent-violet-tint: #ece8f3;
+  --accent-brass-tint: #f5ecdc;
+
+  /* Type */
+  --font-display: 'Fraunces', 'Iowan Old Style', ui-serif, Georgia, serif;
+  --font-body: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* Scale */
+  --step-xs: 0.75rem;
+  --step-sm: 0.875rem;
+  --step-base: 1rem;
+  --step-md: 1.25rem;
+  --step-lg: 1.75rem;
+  --step-xl: 2.5rem;
+  --step-2xl: 3.5rem;
+
+  /* Layout */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --sidebar-width: 248px;
+  --shadow-card: 0 1px 2px rgba(15, 26, 43, 0.06), 0 8px 24px -12px rgba(15, 26, 43, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Visible keyboard focus everywhere — no outline: none without a replacement. */
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Signature motif: a stack of thin ledger rules. Used behind the
+   wordmark on the login screen and as section dividers — never as
+   generic decoration. */
+.ledger-rules {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 27px,
+    var(--line-dark) 27px,
+    var(--line-dark) 28px
+  );
+}
