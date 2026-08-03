@@ -5,6 +5,7 @@ import { TrendingUp, Wallet, ArrowDownToLine, PieChart, Clock } from 'lucide-rea
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatCurrency, CURRENCY_OPTIONS } from '../utils/currency.js';
+import ImportSalesPanel from '../components/ImportSalesPanel.jsx';
 import '../styles/ui.css';
 
 function monthKey(dateStr) {
@@ -395,7 +396,7 @@ export default function CompanyDetail() {
             </div>
             <div className="value">{formatCurrency(company.total_sales, currency)}</div>
           </div>
-          <div className="stat-card tone-teal">
+          <div className="stat-card tone-navy">
             <div className="label-row">
               <Wallet size={15} />
               <div className="label">Total Invested</div>
@@ -414,7 +415,7 @@ export default function CompanyDetail() {
 
       {!isAdmin && company.ownership_percentage !== undefined && (
         <div className="stat-grid">
-          <div className="stat-card tone-teal">
+          <div className="stat-card tone-navy">
             <div className="label-row">
               <PieChart size={15} />
               <div className="label">Your Ownership</div>
@@ -428,7 +429,7 @@ export default function CompanyDetail() {
             </div>
             <div className="value">{formatCurrency(company.capital_committed, currency)}</div>
           </div>
-          <div className="stat-card tone-violet">
+          <div className="stat-card tone-champagne">
             <div className="label-row">
               <TrendingUp size={15} />
               <div className="label">Returns %</div>
@@ -462,6 +463,12 @@ export default function CompanyDetail() {
             Total: {formatCurrency(salesTotal, currency)}
           </span>
         </div>
+
+        {isAdmin && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <ImportSalesPanel companyId={id} currency={currency} onImported={load} />
+          </div>
+        )}
 
         {sales.length >= 2 && (
           <div style={{ height: 180, marginBottom: '1.5rem' }}>

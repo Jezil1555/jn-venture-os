@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import BrandLockup from '../components/BrandLockup.jsx';
 import './Login.css';
 
 export default function Login() {
@@ -31,12 +32,10 @@ export default function Login() {
       <div className="login-brand">
         <div className="ledger-rules" style={{ position: 'absolute', inset: 0, opacity: 0.5 }} />
         <div className="login-brand-mark">
-          <div className="wordmark">
-            JN Venture<span>OS</span>
-          </div>
+          <BrandLockup size="lg" dark tagline="Enduring Trust. Lasting Value." />
         </div>
         <p className="login-brand-tag">
-          One ledger for every company you hold, and every investor who holds a piece of it.
+          Every decision protects trust before profit.
         </p>
         <div className="login-brand-foot">Holding Company Operations</div>
       </div>

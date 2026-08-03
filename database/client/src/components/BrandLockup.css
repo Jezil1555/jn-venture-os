@@ -1,0 +1,88 @@
+.brand-lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.brand-lockup-icon {
+  height: 72px;
+  width: auto;
+  margin-bottom: 0.75rem;
+}
+
+.brand-lockup-lg .brand-lockup-icon {
+  height: 96px;
+}
+
+.brand-lockup-sm .brand-lockup-icon {
+  height: 48px;
+  margin-bottom: 0.5rem;
+}
+
+.brand-lockup-name {
+  font-family: var(--font-display);
+  font-size: var(--step-xl);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.brand-lockup-lg .brand-lockup-name {
+  font-size: 2.75rem;
+}
+
+.brand-lockup-sm .brand-lockup-name {
+  font-size: var(--step-lg);
+}
+
+.brand-lockup-holdings {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.4rem;
+  font-family: var(--font-body);
+  font-size: var(--step-sm);
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  color: var(--brass);
+}
+
+.brand-lockup-sm .brand-lockup-holdings {
+  font-size: var(--step-xs);
+  gap: 0.5rem;
+}
+
+.brand-lockup-holdings .rule {
+  width: 32px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.brand-lockup-tagline {
+  margin-top: 0.9rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--step-sm);
+  letter-spacing: 0.02em;
+}
+
+/* On a dark (navy) background: white wordmark, gold accents — matches
+   the brand book's reversed lockup for dark contexts. */
+.brand-lockup.on-dark .brand-lockup-name {
+  color: var(--paper);
+}
+.brand-lockup.on-dark .brand-lockup-tagline {
+  color: var(--champagne);
+}
+
+/* On a light (ivory/white) background: navy wordmark, gold accents —
+   matches the primary lockup as designed. */
+.brand-lockup.on-light .brand-lockup-name {
+  color: var(--ink);
+}
+.brand-lockup.on-light .brand-lockup-tagline {
+  color: var(--ink);
+  opacity: 0.75;
+}

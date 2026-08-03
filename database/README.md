@@ -1,4 +1,4 @@
-# JN Venture OS
+# Evercrest Holdings — Investor Platform
 
 Internal operations platform for a holding company: manage portfolio
 companies, control which investors can see which company, and track each
@@ -7,6 +7,13 @@ everything described below has been tested against an actual Postgres
 database before being handed to you.
 
 ## What's built (Session 1)
+
+- **Branding** — Evercrest Holdings' actual logo, colors (Midnight Navy /
+  Gold / Champagne / Ivory), and typography (Cormorant Garamond +
+  Montserrat), taken from the brand book. A dedicated **Home** page is
+  the first thing anyone sees after logging in — logo, Purpose, Vision,
+  Mission, Promise, Story, and Core Values (all edited from Settings),
+  then a button through to the real financial Overview.
 
 - **Auth** — JWT login, bcrypt password hashing, no public self-signup
   (admins create accounts).
@@ -60,6 +67,12 @@ database before being handed to you.
   email here is only a login ID — any real address works).
 - **Safer company deletion** — instead of a plain OK/Cancel popup, you
   now have to type the company's exact name to enable the delete button.
+- **Bulk import sales from Excel/CSV** — on a company's page, "Import
+  from Excel / CSV" accepts a spreadsheet with Date, Amount, and
+  (optional) Notes columns, shows a preview of what parsed correctly and
+  what didn't before you commit, and inserts everything in one
+  transaction (so a bad row can't leave you with a half-finished import).
+  A "Download template" button shows the expected format.
 
 ## What's not built yet
 

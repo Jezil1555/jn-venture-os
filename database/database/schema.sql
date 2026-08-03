@@ -110,24 +110,39 @@ CREATE TABLE IF NOT EXISTS holding_expenses (
 );
 
 -- ---------------------------------------------------------------------------
--- org_settings: a singleton row holding the brand story / vision text shown
--- on the investor Overview page. Editable by admins from the Settings page.
+-- org_settings: a singleton row holding the brand content shown on the
+-- investor Home page. Editable by admins from the Settings page.
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS org_settings (
     id          INT PRIMARY KEY DEFAULT 1,
     tagline     VARCHAR(300),
-    brand_story TEXT,
+    purpose     TEXT,
     vision      TEXT,
+    mission     TEXT,
+    promise     TEXT,
+    brand_story TEXT,
+    core_values TEXT,
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     CHECK (id = 1)
 );
 
-INSERT INTO org_settings (id, tagline, brand_story, vision)
+INSERT INTO org_settings (id, tagline, purpose, vision, mission, promise, brand_story, core_values)
 VALUES (
     1,
-    'One ledger for every company you hold, and every investor who holds a piece of it.',
-    'Write a short paragraph here about how the holding company got started and what it stands for — edited from Settings, in the app, by an admin.',
-    'Write a sentence or two here about where the holding company is headed — also edited from Settings.'
+    'Enduring Trust. Lasting Value.',
+    'Build enduring businesses that create generational value.',
+    'To become one of the world''s most trusted holding companies, building exceptional businesses that create lasting prosperity for generations.',
+    'Invest with discipline, lead with integrity, build enduring partnerships, and create sustainable value across every business we own.',
+    'Every decision protects trust before profit.',
+    'Evercrest Holdings was founded on one belief: trust is the most valuable asset any business can possess. We acquire, build and grow businesses with patience rather than speculation. Our ambition is not simply to own companies, but to strengthen them and leave them better for future generations.',
+    'Trust Above All
+Stewardship
+Long-Term Thinking
+Partnership
+Excellence
+Accountability
+Respect
+Sustainable Growth'
 )
 ON CONFLICT (id) DO NOTHING;
 

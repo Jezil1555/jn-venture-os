@@ -11,7 +11,7 @@
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
@@ -22,12 +22,13 @@
   border-left: 3px solid var(--line);
   border-radius: var(--radius-md);
   padding: 1.25rem 1.4rem;
+  min-width: 0; /* allow the card to actually shrink inside its grid track */
 }
 
 .stat-card.tone-brass { border-left-color: var(--brass); }
-.stat-card.tone-teal { border-left-color: var(--accent-teal); }
+.stat-card.tone-navy { border-left-color: var(--accent-navy); }
 .stat-card.tone-amber { border-left-color: var(--accent-amber); }
-.stat-card.tone-violet { border-left-color: var(--accent-violet); }
+.stat-card.tone-champagne { border-left-color: var(--accent-champagne); }
 .stat-card.tone-positive { border-left-color: var(--positive); }
 
 .stat-card .label-row {
@@ -42,9 +43,9 @@
 }
 
 .stat-card.tone-brass .label-row svg { color: var(--brass); }
-.stat-card.tone-teal .label-row svg { color: var(--accent-teal); }
+.stat-card.tone-navy .label-row svg { color: var(--accent-navy); }
 .stat-card.tone-amber .label-row svg { color: var(--accent-amber); }
-.stat-card.tone-violet .label-row svg { color: var(--accent-violet); }
+.stat-card.tone-champagne .label-row svg { color: var(--accent-champagne); }
 .stat-card.tone-positive .label-row svg { color: var(--positive); }
 
 .stat-card .label {
@@ -57,9 +58,12 @@
 
 .stat-card .value {
   font-family: var(--font-mono);
-  font-size: var(--step-xl);
+  font-size: 1.6rem;
   font-weight: 500;
   color: var(--ink);
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .section-title {
