@@ -1,13 +1,25 @@
 import { query } from '../config/db.js';
 import pool from '../config/db.js';
 
-export async function listReturnsForCompany(companyId) {
+export async function listReturnsForCompany(companyId, { from, to } = {}) {
+  const conditions = ['company_id = $1'];
+  const params = [companyId];
+
+  if (from) {
+    params.push(from);
+    conditions.push(`received_on >= $${params.length}`);
+  }
+  if (to) {
+    params.push(to);
+    conditions.push(`received_on <= $${params.length}`);
+  }
+
   const { rows } = await query(
     `SELECT id, company_id, amount, received_on, notes, created_at
      FROM returns_received
-     WHERE company_id = $1
+     WHERE ${conditions.join(' AND ')}
      ORDER BY received_on DESC, created_at DESC`,
-    [companyId]
+    params
   );
   return rows;
 }
@@ -30,10 +42,22 @@ export async function deleteReturn(returnId, companyId) {
   return rowCount > 0;
 }
 
-export async function totalReturnsForCompany(companyId) {
+export async function totalReturnsForCompany(companyId, { from, to } = {}) {
+  const conditions = ['company_id = $1'];
+  const params = [companyId];
+
+  if (from) {
+    params.push(from);
+    conditions.push(`received_on >= $${params.length}`);
+  }
+  if (to) {
+    params.push(to);
+    conditions.push(`received_on <= $${params.length}`);
+  }
+
   const { rows } = await query(
-    `SELECT COALESCE(SUM(amount), 0) AS total FROM returns_received WHERE company_id = $1`,
-    [companyId]
+    `SELECT COALESCE(SUM(amount), 0) AS total FROM returns_received WHERE ${conditions.join(' AND ')}`,
+    params
   );
   return Number(rows[0].total);
 }
