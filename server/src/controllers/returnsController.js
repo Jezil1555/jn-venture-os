@@ -24,9 +24,10 @@ export async function getReturns(req, res) {
   if (!company) {
     return res.status(404).json({ error: 'Company not found.' });
   }
+  const { from, to } = req.query;
   const [returns, total] = await Promise.all([
-    listReturnsForCompany(req.params.id),
-    totalReturnsForCompany(req.params.id),
+    listReturnsForCompany(req.params.id, { from, to }),
+    totalReturnsForCompany(req.params.id, { from, to }),
   ]);
   return res.json({ returns, total });
 }
