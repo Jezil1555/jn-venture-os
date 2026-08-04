@@ -55,3 +55,13 @@ export async function updateUserProfile(userId, { name, email }) {
   );
   return rows[0] || null;
 }
+
+export async function setUserActive(userId, isActive) {
+  const { rows } = await query(
+    `UPDATE users SET is_active = $1, updated_at = now()
+     WHERE id = $2
+     RETURNING id, name, email, role, is_active, created_at`,
+    [isActive, userId]
+  );
+  return rows[0] || null;
+}

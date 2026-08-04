@@ -100,3 +100,14 @@ export async function bulkCreateSales(companyId, rows, createdBy) {
     client.release();
   }
 }
+
+// Deletes many sale rows at once, scoped to the given company so a
+// request can't reach into another company's data by passing arbitrary
+// IDs. Returns how many rows were actually deleted.
+export async function bulkDeleteSales(companyId, saleIds) {
+  const { rowCount } = await query(
+    `DELETE FROM sales WHERE company_id = $1 AND id = ANY($2::uuid[])`,
+    [companyId, saleIds]
+  );
+  return rowCount;
+}
