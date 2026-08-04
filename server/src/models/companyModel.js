@@ -30,8 +30,7 @@ export async function listCompaniesForUser(user) {
             COALESCE((SELECT SUM(amount) FROM distributions
                       WHERE company_id = c.id AND investor_id = $1), 0) AS returns_received_so_far,
             GREATEST(
-              COALESCE((SELECT SUM(amount) FROM returns_received WHERE company_id = c.id), 0)
-                * (ic.ownership_percentage / 100.0)
+              ic.capital_committed
               - COALESCE((SELECT SUM(amount) FROM distributions
                           WHERE company_id = c.id AND investor_id = $1), 0),
               0
@@ -70,8 +69,7 @@ export async function getCompanyByIdForUser(companyId, user) {
             COALESCE((SELECT SUM(amount) FROM distributions
                       WHERE company_id = c.id AND investor_id = $2), 0) AS returns_received_so_far,
             GREATEST(
-              COALESCE((SELECT SUM(amount) FROM returns_received WHERE company_id = c.id), 0)
-                * (ic.ownership_percentage / 100.0)
+              ic.capital_committed
               - COALESCE((SELECT SUM(amount) FROM distributions
                           WHERE company_id = c.id AND investor_id = $2), 0),
               0
