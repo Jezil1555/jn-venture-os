@@ -19,6 +19,27 @@ function monthLabel(key) {
   return d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
 }
 
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+// Defaults the Sales section to the current calendar month rather than
+// all-time — "how are we doing lately" is the more useful default view,
+// and the date filter below still lets you widen it out.
+function currentMonthRange() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const from = `${y}-${pad2(m + 1)}-01`;
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  const to = `${y}-${pad2(m + 1)}-${pad2(lastDay)}`;
+  return { from, to };
+}
+
+function fullMonthName(y, m) {
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+
 export default function CompanyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -39,7 +60,9 @@ export default function CompanyDetail() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const [salesFilter, setSalesFilter] = useState({ from: '', to: '' });
+  const [salesFilter, setSalesFilter] = useState(currentMonthRange());
+  const [selectedSaleIds, setSelectedSaleIds] = useState([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const [linkForm, setLinkForm] = useState({ investorId: '', ownershipPercentage: '', capitalCommitted: '' });
   const [linkError, setLinkError] = useState(null);
@@ -71,6 +94,7 @@ export default function CompanyDetail() {
     const { data } = await api.get(`/companies/${id}/sales`, { params });
     setSales(data.sales);
     setSalesTotal(data.total);
+    setSelectedSaleIds([]); // selections from a previous range shouldn't carry over
   }, [id, salesFilter]);
 
   const load = useCallback(async () => {
@@ -123,6 +147,44 @@ export default function CompanyDetail() {
       .sort()
       .map((key) => ({ month: monthLabel(key), total: byMonth[key] }));
   }, [sales]);
+
+  const salesRangeLabel = useMemo(() => {
+    if (!salesFilter.from && !salesFilter.to) return 'All-Time Total';
+    const thisMonth = currentMonthRange();
+    if (salesFilter.from === thisMonth.from && salesFilter.to === thisMonth.to) {
+      const now = new Date();
+      return `${fullMonthName(now.getFullYear(), now.getMonth() + 1)} Total`;
+    }
+    if (salesFilter.from && salesFilter.to) return 'Selected Range Total';
+    return 'Total';
+  }, [salesFilter]);
+
+  function toggleSelectSale(saleId) {
+    setSelectedSaleIds((prev) =>
+      prev.includes(saleId) ? prev.filter((sid) => sid !== saleId) : [...prev, saleId]
+    );
+  }
+
+  function toggleSelectAllSales() {
+    setSelectedSaleIds((prev) => (prev.length === sales.length ? [] : sales.map((s) => s.id)));
+  }
+
+  async function handleBulkDeleteSales() {
+    if (selectedSaleIds.length === 0) return;
+    const confirmed = window.confirm(
+      `Delete ${selectedSaleIds.length} selected sale${selectedSaleIds.length === 1 ? '' : 's'}? This cannot be undone.`
+    );
+    if (!confirmed) return;
+    setBulkDeleting(true);
+    try {
+      await api.post(`/companies/${id}/sales/bulk-delete`, { saleIds: selectedSaleIds });
+      await loadSales();
+    } catch {
+      setError('Could not delete the selected sales.');
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
 
   async function handleLinkInvestor(e) {
     e.preventDefault();
@@ -460,7 +522,7 @@ export default function CompanyDetail() {
         >
           <span>Sales</span>
           <span className="mono" style={{ fontSize: 'var(--step-sm)', color: 'var(--slate)' }}>
-            Total: {formatCurrency(salesTotal, currency)}
+            {salesRangeLabel}: {formatCurrency(salesTotal, currency)}
           </span>
         </div>
 
@@ -525,15 +587,22 @@ export default function CompanyDetail() {
               onChange={(e) => setSalesFilter({ ...salesFilter, to: e.target.value })}
             />
           </div>
-          {(salesFilter.from || salesFilter.to) && (
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setSalesFilter(currentMonthRange())}
+            >
+              This Month
+            </button>
             <button
               type="button"
               className="btn btn-outline"
               onClick={() => setSalesFilter({ from: '', to: '' })}
             >
-              Clear
+              All Time
             </button>
-          )}
+          </div>
         </div>
 
         {sales.length === 0 && (
@@ -547,10 +616,47 @@ export default function CompanyDetail() {
           </div>
         )}
 
+        {sales.length > 0 && isAdmin && selectedSaleIds.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'var(--paper-dim)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '0.6rem 1rem',
+              marginBottom: '1rem',
+            }}
+          >
+            <span style={{ fontSize: 'var(--step-sm)' }}>
+              {selectedSaleIds.length} selected
+            </span>
+            <button
+              type="button"
+              className="btn"
+              style={{ background: 'var(--negative)', color: 'var(--white)' }}
+              disabled={bulkDeleting}
+              onClick={handleBulkDeleteSales}
+            >
+              {bulkDeleting ? 'Deleting…' : `Delete ${selectedSaleIds.length} Selected`}
+            </button>
+          </div>
+        )}
+
         {sales.length > 0 && (
           <table className="data-table" style={{ marginBottom: isAdmin ? '1.5rem' : 0 }}>
             <thead>
               <tr>
+                {isAdmin && (
+                  <th style={{ width: '2rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedSaleIds.length === sales.length}
+                      onChange={toggleSelectAllSales}
+                      aria-label="Select all"
+                    />
+                  </th>
+                )}
                 <th>Date</th>
                 <th className="num">Amount</th>
                 <th>Notes</th>
@@ -560,6 +666,16 @@ export default function CompanyDetail() {
             <tbody>
               {sales.map((s) => (
                 <tr key={s.id}>
+                  {isAdmin && (
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedSaleIds.includes(s.id)}
+                        onChange={() => toggleSelectSale(s.id)}
+                        aria-label={`Select sale from ${s.sale_date}`}
+                      />
+                    </td>
+                  )}
                   <td>{new Date(s.sale_date).toLocaleDateString()}</td>
                   <td className="num">{formatCurrency(s.amount, currency)}</td>
                   <td>{s.notes || '—'}</td>

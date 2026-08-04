@@ -5,6 +5,7 @@ import {
   deleteSale,
   totalSalesForCompany,
   bulkCreateSales,
+  bulkDeleteSales,
 } from '../models/salesModel.js';
 
 const MAX_BULK_ROWS = 5000;
@@ -104,6 +105,27 @@ export async function postBulkSales(req, res) {
 
   const inserted = await bulkCreateSales(req.params.id, cleanRows, req.user.id);
   return res.status(201).json({ inserted });
+}
+
+// POST /api/companies/:id/sales/bulk-delete (admin only)
+// Body: { saleIds: [...] }. Using POST rather than DELETE-with-a-body
+// avoids relying on clients/proxies that strip bodies from DELETE requests.
+const MAX_BULK_DELETE = 5000;
+
+export async function postBulkDeleteSales(req, res) {
+  const { saleIds } = req.body;
+
+  if (!Array.isArray(saleIds) || saleIds.length === 0) {
+    return res.status(400).json({ error: 'No rows selected.' });
+  }
+  if (saleIds.length > MAX_BULK_DELETE) {
+    return res.status(400).json({ error: `Cannot delete more than ${MAX_BULK_DELETE} rows at once.` });
+  }
+
+  await assertCanViewCompany(req.params.id, req.user);
+
+  const deleted = await bulkDeleteSales(req.params.id, saleIds);
+  return res.json({ deleted });
 }
 
 // DELETE /api/companies/:id/sales/:saleId (admin only)
