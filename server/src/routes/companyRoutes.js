@@ -10,7 +10,7 @@ import {
   deleteCompanyInvestor,
 } from '../controllers/companyController.js';
 import { getSales, postSale, postBulkSales, postBulkDeleteSales, removeSale } from '../controllers/salesController.js';
-import { getReturns, postReturn, removeReturn } from '../controllers/returnsController.js';
+import { getReturns, postReturn, postBulkReturns, postBulkDeleteReturns, removeReturn } from '../controllers/returnsController.js';
 import {
   getDistributions,
   postDistribution,
@@ -46,6 +46,8 @@ router.delete('/:id/sales/:saleId', requireRole('admin'), asyncHandler(removeSal
 // ledger — admin-only end to end, on purpose.
 router.get('/:id/returns', requireRole('admin'), asyncHandler(getReturns));
 router.post('/:id/returns', requireRole('admin'), asyncHandler(postReturn));
+router.post('/:id/returns/bulk', requireRole('admin'), asyncHandler(postBulkReturns));
+router.post('/:id/returns/bulk-delete', requireRole('admin'), asyncHandler(postBulkDeleteReturns));
 router.delete('/:id/returns/:returnId', requireRole('admin'), asyncHandler(removeReturn));
 
 // Distributions is "money paid out to a specific investor" — admin
