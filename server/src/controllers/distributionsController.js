@@ -16,13 +16,14 @@ export async function getDistributions(req, res) {
   if (!company) {
     return res.status(404).json({ error: 'Company not found, or you do not have access to it.' });
   }
+  const { from, to } = req.query;
 
   if (req.user.role === 'admin') {
-    const distributions = await listDistributionsForCompany(req.params.id);
+    const distributions = await listDistributionsForCompany(req.params.id, { from, to });
     return res.json({ distributions });
   }
 
-  const distributions = await listDistributionsForInvestor(req.params.id, req.user.id);
+  const distributions = await listDistributionsForInvestor(req.params.id, req.user.id, { from, to });
   return res.json({ distributions });
 }
 
