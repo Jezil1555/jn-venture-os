@@ -27,20 +27,36 @@ export async function getCompany(req, res) {
 
 // POST /api/companies (admin only)
 export async function postCompany(req, res) {
-  const { name, description, industry, currency } = req.body;
+  const { name, description, industry, currency, totalProjectCost } = req.body;
   if (!name) {
     return res.status(400).json({ error: 'Company name is required.' });
   }
   if (currency && !['USD', 'INR', 'QAR'].includes(currency)) {
     return res.status(400).json({ error: 'Currency must be USD, INR, or QAR.' });
   }
-  const company = await createCompany({ name, description, industry, currency, createdBy: req.user.id });
+  const company = await createCompany({
+    name,
+    description,
+    industry,
+    currency,
+    totalProjectCost,
+    createdBy: req.user.id,
+  });
   return res.status(201).json({ company });
 }
 
 // PATCH /api/companies/:id (admin only)
 export async function patchCompany(req, res) {
-  const company = await updateCompany(req.params.id, req.body);
+  const { name, description, industry, status, currency, totalProjectCost } = req.body;
+  const fields = {};
+  if (name !== undefined) fields.name = name;
+  if (description !== undefined) fields.description = description;
+  if (industry !== undefined) fields.industry = industry;
+  if (status !== undefined) fields.status = status;
+  if (currency !== undefined) fields.currency = currency;
+  if (totalProjectCost !== undefined) fields.total_project_cost = totalProjectCost;
+
+  const company = await updateCompany(req.params.id, fields);
   if (!company) {
     return res.status(404).json({ error: 'Company not found.' });
   }
@@ -63,17 +79,12 @@ export async function getCompanyInvestors(req, res) {
 }
 
 // PUT /api/companies/:id/investors/:investorId (admin only)
-// Links an investor to this company (or updates their stake).
+// Grants an investor visibility into this company with no investment yet —
+// an edge case. The normal path is logging their first investment, which
+// creates this same link automatically.
 export async function putCompanyInvestor(req, res) {
   const { id: companyId, investorId } = req.params;
-  const { ownershipPercentage, capitalCommitted } = req.body;
-
-  const link = await upsertInvestorLink({
-    investorId,
-    companyId,
-    ownershipPercentage,
-    capitalCommitted,
-  });
+  const link = await upsertInvestorLink({ investorId, companyId });
   return res.json({ link });
 }
 
