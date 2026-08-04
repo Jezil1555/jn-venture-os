@@ -7,10 +7,6 @@ import { formatCurrency } from '../utils/currency.js';
 import '../styles/ui.css';
 import './Overview.css';
 
-// Companies can each carry a different currency, so a single blended sum
-// across all of them would be misleading (adding USD to INR is meaningless).
-// Group and sum per currency instead, and show one figure per currency
-// actually in use.
 function sumByCurrency(companies, field) {
   const totals = {};
   for (const c of companies) {
@@ -134,6 +130,7 @@ export default function Overview() {
                   <th>Company</th>
                   <th>Since</th>
                   <th>Status</th>
+                  <th className="num">Total Project Cost</th>
                   {isAdmin ? (
                     <>
                       <th className="num">Sales (This Month)</th>
@@ -143,6 +140,7 @@ export default function Overview() {
                   ) : (
                     <>
                       <th className="num">Invested</th>
+                      <th className="num">Ownership</th>
                       <th className="num">Returns %</th>
                       <th className="num">Received So Far</th>
                       <th className="num">Pending</th>
@@ -162,6 +160,7 @@ export default function Overview() {
                     <td>
                       <span className={`badge ${c.status}`}>{c.status}</span>
                     </td>
+                    <td className="num">{formatCurrency(c.total_project_cost, c.currency)}</td>
                     {isAdmin ? (
                       <>
                         <td className="num">{formatCurrency(c.sales_this_month, c.currency)}</td>
@@ -171,6 +170,7 @@ export default function Overview() {
                     ) : (
                       <>
                         <td className="num">{formatCurrency(c.capital_committed, c.currency)}</td>
+                        <td className="num">{Number(c.ownership_percentage || 0).toFixed(1)}%</td>
                         <td className="num">{Number(c.returns_percent || 0).toFixed(1)}%</td>
                         <td className="num">{formatCurrency(c.returns_received_so_far, c.currency)}</td>
                         <td className="num">{formatCurrency(c.pending_to_receive, c.currency)}</td>
