@@ -67,6 +67,17 @@ database before being handed to you.
   email here is only a login ID — any real address works).
 - **Safer company deletion** — instead of a plain OK/Cancel popup, you
   now have to type the company's exact name to enable the delete button.
+- **Remove a user's access** — from Users, without deleting their account
+  outright. This deactivates their login (they can no longer sign in,
+  and can be reactivated anytime) rather than hard-deleting the row,
+  because a hard delete would cascade and erase that investor's
+  distribution history — the schema references it that way on purpose.
+- **Bulk delete sales** — checkboxes on the sales table, select-all, and
+  a delete-selected action, mirroring the bulk-import flow.
+- **Live login page** — the tagline, promise, and core values on the
+  login screen now come from Settings in real time (that endpoint is
+  intentionally public — brand copy isn't sensitive, and the login
+  screen loads before anyone's authenticated).
 - **Bulk import sales from Excel/CSV** — on a company's page, "Import
   from Excel / CSV" accepts a spreadsheet with Date, Amount, and
   (optional) Notes columns, shows a preview of what parsed correctly and

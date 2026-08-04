@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import BrandLockup from '../components/BrandLockup.jsx';
+import api from '../api/client.js';
 import './Login.css';
+
+const FALLBACK_TAGLINE = 'Enduring Trust. Lasting Value.';
+const FALLBACK_PROMISE = 'Every decision protects trust before profit.';
 
 export default function Login() {
   const { user, login, error } = useAuth();
@@ -11,6 +15,17 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [settings, setSettings] = useState(null);
+
+  useEffect(() => {
+    api
+      .get('/settings')
+      .then(({ data }) => setSettings(data.settings))
+      .catch(() => {
+        // Fall back to the defaults below — a login page with no live
+        // settings is still a fully working login page.
+      });
+  }, []);
 
   if (user) {
     const dest = location.state?.from?.pathname || '/dashboard';
@@ -32,11 +47,25 @@ export default function Login() {
       <div className="login-brand">
         <div className="ledger-rules" style={{ position: 'absolute', inset: 0, opacity: 0.5 }} />
         <div className="login-brand-mark">
-          <BrandLockup size="lg" dark tagline="Enduring Trust. Lasting Value." />
+          <BrandLockup size="lg" dark tagline={settings?.tagline || FALLBACK_TAGLINE} />
         </div>
         <p className="login-brand-tag">
-          Every decision protects trust before profit.
+          {settings?.promise || FALLBACK_PROMISE}
         </p>
+        {settings?.core_values && (
+          <div className="login-values">
+            {settings.core_values
+              .split('\n')
+              .map((v) => v.trim())
+              .filter(Boolean)
+              .slice(0, 6)
+              .map((v) => (
+                <span className="login-value-tag" key={v}>
+                  {v}
+                </span>
+              ))}
+          </div>
+        )}
         <div className="login-brand-foot">Holding Company Operations</div>
       </div>
 

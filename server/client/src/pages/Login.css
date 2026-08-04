@@ -14,12 +14,13 @@
 }
 
 .login-brand {
-  background: var(--ink);
+  background: radial-gradient(ellipse at 30% 20%, var(--ink-raised) 0%, var(--ink) 55%), var(--ink);
   color: var(--paper);
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 2.25rem;
   padding: 3rem;
   overflow: hidden;
 }
@@ -29,6 +30,25 @@
   position: absolute;
   inset: 0;
   opacity: 0.5;
+}
+
+.login-values {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.login-value-tag {
+  font-family: var(--font-mono);
+  font-size: var(--step-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--champagne);
+  border: 1px solid var(--line-dark);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
 }
 
 .login-brand-mark {
@@ -49,7 +69,9 @@
 }
 
 .login-brand-foot {
-  position: relative;
+  position: absolute;
+  left: 3rem;
+  bottom: 2rem;
   z-index: 1;
   font-family: var(--font-mono);
   font-size: var(--step-xs);
