@@ -14,18 +14,10 @@ function pad2(n) {
   return String(n).padStart(2, '0');
 }
 
-// Cells that came through as real Excel date values (via cellDates) arrive
-// as JS Date objects built from the serial number using UTC — so they must
-// be read back out with UTC getters, or the calendar day can shift by one
-// depending on the browser's local timezone.
 function formatDateFromExcelDate(d) {
   return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
 }
 
-// Text cells (typical for CSV, or a text-formatted Date column) are parsed
-// with the platform's Date parser, which already resolves against local
-// time — so these use local getters instead, to stay consistent with how
-// the string itself was interpreted.
 function parseDateString(str) {
   const trimmed = String(str).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
@@ -44,8 +36,6 @@ function parseDateCell(value) {
     return formatDateFromExcelDate(value);
   }
   if (typeof value === 'number') {
-    // Raw Excel serial date number (cellDates sometimes misses this for
-    // oddly-formatted cells) — convert using SheetJS's own date math.
     const parsed = XLSX.SSF.parse_date_code(value);
     if (!parsed) return null;
     return `${parsed.y}-${pad2(parsed.m)}-${pad2(parsed.d)}`;
@@ -69,12 +59,7 @@ function parseAmountCell(value) {
   return null;
 }
 
-// Parses an uploaded workbook (ArrayBuffer) into { rows, errors, headerError }.
-// rows: valid { saleDate, amount, notes } objects, in original file order.
-// errors: { line, raw, reason } for rows that couldn't be parsed.
-// headerError: set instead of parsing anything if Date/Amount columns
-// can't be found at all.
-export function parseSalesWorkbook(arrayBuffer) {
+function parseDateAmountNotesWorkbook(arrayBuffer, dateFieldKey) {
   const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
   const firstSheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[firstSheetName];
@@ -105,16 +90,16 @@ export function parseSalesWorkbook(arrayBuffer) {
   for (let i = 1; i < grid.length; i += 1) {
     const raw = grid[i];
     if (!raw || raw.every((cell) => cell === '' || cell === undefined || cell === null)) {
-      continue; // skip fully blank rows
+      continue;
     }
 
-    const lineNo = i + 1; // 1-indexed, matches what a spreadsheet user sees
+    const lineNo = i + 1;
     const dateValue = raw[dateCol];
     const amountValue = raw[amountCol];
     const notesValue = notesCol !== -1 ? raw[notesCol] : '';
 
-    const saleDate = parseDateCell(dateValue);
-    if (!saleDate) {
+    const parsedDate = parseDateCell(dateValue);
+    if (!parsedDate) {
       errors.push({ line: lineNo, raw: String(dateValue ?? ''), reason: 'Could not read this date.' });
       continue;
     }
@@ -125,8 +110,16 @@ export function parseSalesWorkbook(arrayBuffer) {
       continue;
     }
 
-    rows.push({ saleDate, amount, notes: notesValue ? String(notesValue).slice(0, 500) : '' });
+    rows.push({ [dateFieldKey]: parsedDate, amount, notes: notesValue ? String(notesValue).slice(0, 500) : '' });
   }
 
   return { rows, errors, headerError: null };
+}
+
+export function parseSalesWorkbook(arrayBuffer) {
+  return parseDateAmountNotesWorkbook(arrayBuffer, 'saleDate');
+}
+
+export function parseReturnsWorkbook(arrayBuffer) {
+  return parseDateAmountNotesWorkbook(arrayBuffer, 'receivedOn');
 }
