@@ -6,6 +6,7 @@ import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatCurrency, CURRENCY_OPTIONS } from '../utils/currency.js';
 import ImportSalesPanel from '../components/ImportSalesPanel.jsx';
+import ImportReturnsPanel from '../components/ImportReturnsPanel.jsx';
 import '../styles/ui.css';
 
 function monthKey(dateStr) {
@@ -23,9 +24,6 @@ function pad2(n) {
   return String(n).padStart(2, '0');
 }
 
-// Defaults the Sales section to the current calendar month rather than
-// all-time — "how are we doing lately" is the more useful default view,
-// and the date filter below still lets you widen it out.
 function currentMonthRange() {
   const now = new Date();
   const y = now.getFullYear();
@@ -63,6 +61,8 @@ export default function CompanyDetail() {
   const [salesFilter, setSalesFilter] = useState(currentMonthRange());
   const [selectedSaleIds, setSelectedSaleIds] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [selectedReturnIds, setSelectedReturnIds] = useState([]);
+  const [bulkDeletingReturns, setBulkDeletingReturns] = useState(false);
 
   const [linkForm, setLinkForm] = useState({ investorId: '', ownershipPercentage: '', capitalCommitted: '' });
   const [linkError, setLinkError] = useState(null);
@@ -94,7 +94,7 @@ export default function CompanyDetail() {
     const { data } = await api.get(`/companies/${id}/sales`, { params });
     setSales(data.sales);
     setSalesTotal(data.total);
-    setSelectedSaleIds([]); // selections from a previous range shouldn't carry over
+    setSelectedSaleIds([]);
   }, [id, salesFilter]);
 
   const load = useCallback(async () => {
@@ -117,6 +117,7 @@ export default function CompanyDetail() {
         setInvestors(investorsRes.data.investors);
         setAllInvestors(usersRes.data.users);
         setReturns(returnsRes.data.returns);
+        setSelectedReturnIds([]);
         setReturnsTotal(returnsRes.data.total);
       }
     } catch (err) {
@@ -183,6 +184,33 @@ export default function CompanyDetail() {
       setError('Could not delete the selected sales.');
     } finally {
       setBulkDeleting(false);
+    }
+  }
+
+  function toggleSelectReturn(returnId) {
+    setSelectedReturnIds((prev) =>
+      prev.includes(returnId) ? prev.filter((rid) => rid !== returnId) : [...prev, returnId]
+    );
+  }
+
+  function toggleSelectAllReturns() {
+    setSelectedReturnIds((prev) => (prev.length === returns.length ? [] : returns.map((r) => r.id)));
+  }
+
+  async function handleBulkDeleteReturns() {
+    if (selectedReturnIds.length === 0) return;
+    const confirmed = window.confirm(
+      `Delete ${selectedReturnIds.length} selected return${selectedReturnIds.length === 1 ? '' : 's'}? This cannot be undone.`
+    );
+    if (!confirmed) return;
+    setBulkDeletingReturns(true);
+    try {
+      await api.post(`/companies/${id}/returns/bulk-delete`, { returnIds: selectedReturnIds });
+      await load();
+    } catch {
+      setError('Could not delete the selected returns.');
+    } finally {
+      setBulkDeletingReturns(false);
     }
   }
 
@@ -758,6 +786,10 @@ export default function CompanyDetail() {
             you only. Investors see their own share as "Pending" instead, once you distribute it.
           </p>
 
+          <div style={{ marginBottom: '1.5rem' }}>
+            <ImportReturnsPanel companyId={id} currency={currency} onImported={load} />
+          </div>
+
           {returns.length === 0 && (
             <div className="empty-state">
               <h3>No returns recorded yet</h3>
@@ -765,10 +797,43 @@ export default function CompanyDetail() {
             </div>
           )}
 
+          {returns.length > 0 && selectedReturnIds.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'var(--paper-dim)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '0.6rem 1rem',
+                marginBottom: '1rem',
+              }}
+            >
+              <span style={{ fontSize: 'var(--step-sm)' }}>{selectedReturnIds.length} selected</span>
+              <button
+                type="button"
+                className="btn"
+                style={{ background: 'var(--negative)', color: 'var(--white)' }}
+                disabled={bulkDeletingReturns}
+                onClick={handleBulkDeleteReturns}
+              >
+                {bulkDeletingReturns ? 'Deleting…' : `Delete ${selectedReturnIds.length} Selected`}
+              </button>
+            </div>
+          )}
+
           {returns.length > 0 && (
             <table className="data-table" style={{ marginBottom: '1.5rem' }}>
               <thead>
                 <tr>
+                  <th style={{ width: '2rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedReturnIds.length === returns.length}
+                      onChange={toggleSelectAllReturns}
+                      aria-label="Select all"
+                    />
+                  </th>
                   <th>Date</th>
                   <th className="num">Amount</th>
                   <th>Notes</th>
@@ -778,6 +843,14 @@ export default function CompanyDetail() {
               <tbody>
                 {returns.map((r) => (
                   <tr key={r.id}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedReturnIds.includes(r.id)}
+                        onChange={() => toggleSelectReturn(r.id)}
+                        aria-label={`Select return from ${r.received_on}`}
+                      />
+                    </td>
                     <td>{new Date(r.received_on).toLocaleDateString()}</td>
                     <td className="num">{formatCurrency(r.amount, currency)}</td>
                     <td>{r.notes || '—'}</td>
