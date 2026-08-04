@@ -1,27 +1,51 @@
 import { query } from '../config/db.js';
 
 // All distributions for a company, with investor names attached — admin view.
-export async function listDistributionsForCompany(companyId) {
+export async function listDistributionsForCompany(companyId, { from, to } = {}) {
+  const conditions = ['d.company_id = $1'];
+  const params = [companyId];
+
+  if (from) {
+    params.push(from);
+    conditions.push(`d.distributed_on >= $${params.length}`);
+  }
+  if (to) {
+    params.push(to);
+    conditions.push(`d.distributed_on <= $${params.length}`);
+  }
+
   const { rows } = await query(
     `SELECT d.id, d.investor_id, d.company_id, d.amount, d.distributed_on, d.notes, d.created_at,
             u.name AS investor_name
      FROM distributions d
      INNER JOIN users u ON u.id = d.investor_id
-     WHERE d.company_id = $1
+     WHERE ${conditions.join(' AND ')}
      ORDER BY d.distributed_on DESC, d.created_at DESC`,
-    [companyId]
+    params
   );
   return rows;
 }
 
 // Just one investor's distributions for a company — investor's own view.
-export async function listDistributionsForInvestor(companyId, investorId) {
+export async function listDistributionsForInvestor(companyId, investorId, { from, to } = {}) {
+  const conditions = ['company_id = $1', 'investor_id = $2'];
+  const params = [companyId, investorId];
+
+  if (from) {
+    params.push(from);
+    conditions.push(`distributed_on >= $${params.length}`);
+  }
+  if (to) {
+    params.push(to);
+    conditions.push(`distributed_on <= $${params.length}`);
+  }
+
   const { rows } = await query(
     `SELECT id, investor_id, company_id, amount, distributed_on, notes, created_at
      FROM distributions
-     WHERE company_id = $1 AND investor_id = $2
+     WHERE ${conditions.join(' AND ')}
      ORDER BY distributed_on DESC, created_at DESC`,
-    [companyId, investorId]
+    params
   );
   return rows;
 }
