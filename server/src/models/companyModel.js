@@ -7,16 +7,20 @@ import { query } from '../config/db.js';
 // admins get holding-level totals (sales, invested, returns received);
 // investors get only figures scoped to their own stake (never another
 // investor's numbers, never the raw returns-received ledger).
+//
+// total_invested comes from summing the investments ledger (not a single
+// stored number), and ownership_percentage is computed from that against
+// the company's total_project_cost — nobody types in a percentage by hand.
 export async function listCompaniesForUser(user) {
   if (user.role === 'admin') {
     const { rows } = await query(
-      `SELECT c.id, c.name, c.description, c.industry, c.currency, c.status, c.created_at,
+      `SELECT c.id, c.name, c.description, c.industry, c.currency, c.total_project_cost, c.status, c.created_at,
               COALESCE((SELECT SUM(amount) FROM sales WHERE company_id = c.id), 0) AS total_sales,
               COALESCE((SELECT SUM(amount) FROM sales
                         WHERE company_id = c.id
                           AND sale_date >= date_trunc('month', CURRENT_DATE)
                           AND sale_date < date_trunc('month', CURRENT_DATE) + INTERVAL '1 month'), 0) AS sales_this_month,
-              COALESCE((SELECT SUM(capital_committed) FROM investor_companies WHERE company_id = c.id), 0) AS total_invested,
+              COALESCE((SELECT SUM(amount) FROM investments WHERE company_id = c.id), 0) AS total_invested,
               COALESCE((SELECT SUM(amount) FROM returns_received WHERE company_id = c.id), 0) AS total_returns_received
        FROM companies c
        ORDER BY c.created_at DESC`
@@ -25,12 +29,14 @@ export async function listCompaniesForUser(user) {
   }
 
   const { rows } = await query(
-    `SELECT c.id, c.name, c.description, c.industry, c.currency, c.status, c.created_at,
-            ic.ownership_percentage, ic.capital_committed,
+    `SELECT c.id, c.name, c.description, c.industry, c.currency, c.total_project_cost, c.status, c.created_at,
+            COALESCE((SELECT SUM(amount) FROM investments
+                      WHERE company_id = c.id AND investor_id = $1), 0) AS capital_committed,
             COALESCE((SELECT SUM(amount) FROM distributions
                       WHERE company_id = c.id AND investor_id = $1), 0) AS returns_received_so_far,
             GREATEST(
-              ic.capital_committed
+              COALESCE((SELECT SUM(amount) FROM investments
+                        WHERE company_id = c.id AND investor_id = $1), 0)
               - COALESCE((SELECT SUM(amount) FROM distributions
                           WHERE company_id = c.id AND investor_id = $1), 0),
               0
@@ -43,6 +49,10 @@ export async function listCompaniesForUser(user) {
   );
   return rows.map((r) => ({
     ...r,
+    ownership_percentage:
+      Number(r.total_project_cost) > 0
+        ? (Number(r.capital_committed) / Number(r.total_project_cost)) * 100
+        : 0,
     returns_percent:
       Number(r.capital_committed) > 0
         ? (Number(r.returns_received_so_far) / Number(r.capital_committed)) * 100
@@ -53,9 +63,9 @@ export async function listCompaniesForUser(user) {
 export async function getCompanyByIdForUser(companyId, user) {
   if (user.role === 'admin') {
     const { rows } = await query(
-      `SELECT c.id, c.name, c.description, c.industry, c.currency, c.status, c.created_at,
+      `SELECT c.id, c.name, c.description, c.industry, c.currency, c.total_project_cost, c.status, c.created_at,
               COALESCE((SELECT SUM(amount) FROM sales WHERE company_id = c.id), 0) AS total_sales,
-              COALESCE((SELECT SUM(capital_committed) FROM investor_companies WHERE company_id = c.id), 0) AS total_invested,
+              COALESCE((SELECT SUM(amount) FROM investments WHERE company_id = c.id), 0) AS total_invested,
               COALESCE((SELECT SUM(amount) FROM returns_received WHERE company_id = c.id), 0) AS total_returns_received
        FROM companies c WHERE c.id = $1`,
       [companyId]
@@ -64,12 +74,14 @@ export async function getCompanyByIdForUser(companyId, user) {
   }
 
   const { rows } = await query(
-    `SELECT c.id, c.name, c.description, c.industry, c.currency, c.status, c.created_at,
-            ic.ownership_percentage, ic.capital_committed,
+    `SELECT c.id, c.name, c.description, c.industry, c.currency, c.total_project_cost, c.status, c.created_at,
+            COALESCE((SELECT SUM(amount) FROM investments
+                      WHERE company_id = c.id AND investor_id = $2), 0) AS capital_committed,
             COALESCE((SELECT SUM(amount) FROM distributions
                       WHERE company_id = c.id AND investor_id = $2), 0) AS returns_received_so_far,
             GREATEST(
-              ic.capital_committed
+              COALESCE((SELECT SUM(amount) FROM investments
+                        WHERE company_id = c.id AND investor_id = $2), 0)
               - COALESCE((SELECT SUM(amount) FROM distributions
                           WHERE company_id = c.id AND investor_id = $2), 0),
               0
@@ -83,6 +95,10 @@ export async function getCompanyByIdForUser(companyId, user) {
   if (!row) return null;
   return {
     ...row,
+    ownership_percentage:
+      Number(row.total_project_cost) > 0
+        ? (Number(row.capital_committed) / Number(row.total_project_cost)) * 100
+        : 0,
     returns_percent:
       Number(row.capital_committed) > 0
         ? (Number(row.returns_received_so_far) / Number(row.capital_committed)) * 100
@@ -90,18 +106,18 @@ export async function getCompanyByIdForUser(companyId, user) {
   };
 }
 
-export async function createCompany({ name, description, industry, currency, createdBy }) {
+export async function createCompany({ name, description, industry, currency, totalProjectCost, createdBy }) {
   const { rows } = await query(
-    `INSERT INTO companies (name, description, industry, currency, created_by)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, name, description, industry, currency, status, created_at`,
-    [name, description || null, industry || null, currency || 'USD', createdBy]
+    `INSERT INTO companies (name, description, industry, currency, total_project_cost, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, name, description, industry, currency, total_project_cost, status, created_at`,
+    [name, description || null, industry || null, currency || 'USD', totalProjectCost || 0, createdBy]
   );
   return rows[0];
 }
 
 export async function updateCompany(companyId, fields) {
-  const allowed = ['name', 'description', 'industry', 'status', 'currency'];
+  const allowed = ['name', 'description', 'industry', 'status', 'currency', 'total_project_cost'];
   const sets = [];
   const values = [];
   let i = 1;
@@ -119,7 +135,7 @@ export async function updateCompany(companyId, fields) {
   values.push(companyId);
 
   const { rows } = await query(
-    `UPDATE companies SET ${sets.join(', ')} WHERE id = $${i} RETURNING id, name, description, industry, currency, status, created_at, updated_at`,
+    `UPDATE companies SET ${sets.join(', ')} WHERE id = $${i} RETURNING id, name, description, industry, currency, total_project_cost, status, created_at, updated_at`,
     values
   );
   return rows[0] || null;
@@ -130,18 +146,24 @@ export async function deleteCompany(companyId) {
   return rowCount > 0;
 }
 
-// Link/unlink an investor to a company, or update their stake.
-export async function upsertInvestorLink({ investorId, companyId, ownershipPercentage, capitalCommitted }) {
+// Creates a bare visibility link with no financial data — used only if an
+// admin wants to grant an investor access before any investment is logged.
+// The normal flow is: logging an investor's first investment creates this
+// link automatically (see investmentsModel.createInvestment).
+export async function upsertInvestorLink({ investorId, companyId }) {
   const { rows } = await query(
-    `INSERT INTO investor_companies (investor_id, company_id, ownership_percentage, capital_committed)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (investor_id, company_id)
-     DO UPDATE SET ownership_percentage = EXCLUDED.ownership_percentage,
-                    capital_committed = EXCLUDED.capital_committed
-     RETURNING id, investor_id, company_id, ownership_percentage, capital_committed`,
-    [investorId, companyId, ownershipPercentage ?? 0, capitalCommitted ?? 0]
+    `INSERT INTO investor_companies (investor_id, company_id)
+     VALUES ($1, $2)
+     ON CONFLICT (investor_id, company_id) DO NOTHING
+     RETURNING id, investor_id, company_id`,
+    [investorId, companyId]
   );
-  return rows[0];
+  if (rows[0]) return rows[0];
+  const { rows: existing } = await query(
+    `SELECT id, investor_id, company_id FROM investor_companies WHERE investor_id = $1 AND company_id = $2`,
+    [investorId, companyId]
+  );
+  return existing[0];
 }
 
 export async function removeInvestorLink({ investorId, companyId }) {
@@ -152,14 +174,27 @@ export async function removeInvestorLink({ investorId, companyId }) {
   return rowCount > 0;
 }
 
+// Summary row per linked investor: total invested (summed from the
+// investments ledger) and ownership % computed against the company's
+// total_project_cost. This is a summary view — the detailed dated history
+// lives in the investments ledger itself.
 export async function listInvestorsForCompany(companyId) {
   const { rows } = await query(
-    `SELECT u.id, u.name, u.email, ic.ownership_percentage, ic.capital_committed
+    `SELECT u.id, u.name, u.email, c.total_project_cost,
+            COALESCE((SELECT SUM(amount) FROM investments
+                      WHERE company_id = $1 AND investor_id = u.id), 0) AS capital_committed
      FROM investor_companies ic
      INNER JOIN users u ON u.id = ic.investor_id
+     INNER JOIN companies c ON c.id = ic.company_id
      WHERE ic.company_id = $1
-     ORDER BY ic.ownership_percentage DESC`,
+     ORDER BY capital_committed DESC`,
     [companyId]
   );
-  return rows;
+  return rows.map((r) => ({
+    ...r,
+    ownership_percentage:
+      Number(r.total_project_cost) > 0
+        ? (Number(r.capital_committed) / Number(r.total_project_cost)) * 100
+        : 0,
+  }));
 }
