@@ -1,4 +1,5 @@
 import { query } from '../config/db.js';
+import pool from '../config/db.js';
 
 export async function listReturnsForCompany(companyId) {
   const { rows } = await query(
@@ -35,4 +36,37 @@ export async function totalReturnsForCompany(companyId) {
     [companyId]
   );
   return Number(rows[0].total);
+}
+
+// Used for spreadsheet imports — same transactional all-or-nothing pattern
+// as bulkCreateSales.
+export async function bulkCreateReturns(companyId, rows, createdBy) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    let inserted = 0;
+    for (const row of rows) {
+      await client.query(
+        `INSERT INTO returns_received (company_id, received_on, amount, notes, created_by)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [companyId, row.receivedOn, row.amount, row.notes || null, createdBy]
+      );
+      inserted += 1;
+    }
+    await client.query('COMMIT');
+    return inserted;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+export async function bulkDeleteReturns(companyId, returnIds) {
+  const { rowCount } = await query(
+    `DELETE FROM returns_received WHERE company_id = $1 AND id = ANY($2::uuid[])`,
+    [companyId, returnIds]
+  );
+  return rowCount;
 }
