@@ -15,7 +15,7 @@ export default function Companies() {
   const [error, setError] = useState(null);
 
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', industry: '', description: '', currency: 'USD' });
+  const [form, setForm] = useState({ name: '', industry: '', description: '', currency: 'USD', totalProjectCost: '' });
   const [formError, setFormError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -39,8 +39,8 @@ export default function Companies() {
     }
     setSaving(true);
     try {
-      await api.post('/companies', form);
-      setForm({ name: '', industry: '', description: '', currency: 'USD' });
+      await api.post('/companies', { ...form, totalProjectCost: Number(form.totalProjectCost) || 0 });
+      setForm({ name: '', industry: '', description: '', currency: 'USD', totalProjectCost: '' });
       setShowForm(false);
       loadCompanies();
     } catch (err) {
@@ -122,6 +122,21 @@ export default function Companies() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="field">
+              <label htmlFor="totalProjectCost">Total Project Cost</label>
+              <input
+                id="totalProjectCost"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.totalProjectCost}
+                onChange={(e) => setForm({ ...form, totalProjectCost: e.target.value })}
+                placeholder="Optional — can be set later"
+              />
+              <p style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)', margin: '0.35rem 0 0' }}>
+                Used to calculate each investor's ownership % automatically.
+              </p>
             </div>
             <button className="btn btn-dark" type="submit" disabled={saving} style={{ width: 'fit-content' }}>
               {saving ? 'Saving…' : 'Create Company'}
