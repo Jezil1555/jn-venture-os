@@ -17,13 +17,17 @@ import {
   patchDistribution,
   removeDistribution,
 } from '../controllers/distributionsController.js';
+import {
+  getInvestments,
+  postInvestment,
+  patchInvestment,
+  removeInvestment,
+} from '../controllers/investmentsController.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
 
-// Every route here requires a logged-in user; the model layer scopes
-// results by role (admin sees all, investor sees only their own links).
 router.use(requireAuth);
 
 router.get('/', asyncHandler(listCompanies));
@@ -42,19 +46,20 @@ router.post('/:id/sales/bulk', requireRole('admin'), asyncHandler(postBulkSales)
 router.post('/:id/sales/bulk-delete', requireRole('admin'), asyncHandler(postBulkDeleteSales));
 router.delete('/:id/sales/:saleId', requireRole('admin'), asyncHandler(removeSale));
 
-// Returns-received is the internal "money came back to the holding co"
-// ledger — admin-only end to end, on purpose.
 router.get('/:id/returns', requireRole('admin'), asyncHandler(getReturns));
 router.post('/:id/returns', requireRole('admin'), asyncHandler(postReturn));
 router.post('/:id/returns/bulk', requireRole('admin'), asyncHandler(postBulkReturns));
 router.post('/:id/returns/bulk-delete', requireRole('admin'), asyncHandler(postBulkDeleteReturns));
 router.delete('/:id/returns/:returnId', requireRole('admin'), asyncHandler(removeReturn));
 
-// Distributions is "money paid out to a specific investor" — admin
-// manages it, investors can view (only their own, enforced in the model).
 router.get('/:id/distributions', asyncHandler(getDistributions));
 router.post('/:id/distributions', requireRole('admin'), asyncHandler(postDistribution));
 router.patch('/:id/distributions/:distributionId', requireRole('admin'), asyncHandler(patchDistribution));
 router.delete('/:id/distributions/:distributionId', requireRole('admin'), asyncHandler(removeDistribution));
+
+router.get('/:id/investments', asyncHandler(getInvestments));
+router.post('/:id/investments', requireRole('admin'), asyncHandler(postInvestment));
+router.patch('/:id/investments/:investmentId', requireRole('admin'), asyncHandler(patchInvestment));
+router.delete('/:id/investments/:investmentId', requireRole('admin'), asyncHandler(removeInvestment));
 
 export default router;
