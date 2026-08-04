@@ -6,6 +6,7 @@ import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatCurrency, CURRENCY_OPTIONS } from '../utils/currency.js';
 import ImportSalesPanel from '../components/ImportSalesPanel.jsx';
+import ExportPanel from '../components/ExportPanel.jsx';
 import ImportReturnsPanel from '../components/ImportReturnsPanel.jsx';
 import '../styles/ui.css';
 
@@ -560,6 +561,17 @@ export default function CompanyDetail() {
           </div>
         )}
 
+        <div style={{ marginBottom: '1.5rem' }}>
+          <ExportPanel
+            companyId={id}
+            companyName={company.name}
+            currency={currency}
+            dataType="sales"
+            isAdmin={isAdmin}
+            label="Download Sales (Excel)"
+          />
+        </div>
+
         {sales.length >= 2 && (
           <div style={{ height: 180, marginBottom: '1.5rem' }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -786,8 +798,16 @@ export default function CompanyDetail() {
             you only. Investors see their own share as "Pending" instead, once you distribute it.
           </p>
 
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <ImportReturnsPanel companyId={id} currency={currency} onImported={load} />
+            <ExportPanel
+              companyId={id}
+              companyName={company.name}
+              currency={currency}
+              dataType="returns"
+              isAdmin={isAdmin}
+              label="Download Returns (Excel)"
+            />
           </div>
 
           {returns.length === 0 && (
@@ -1093,6 +1113,17 @@ export default function CompanyDetail() {
             Money actually paid out to you for this company.
           </p>
         )}
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <ExportPanel
+            companyId={id}
+            companyName={company.name}
+            currency={currency}
+            dataType="distributions"
+            isAdmin={isAdmin}
+            label="Download Distributions (Excel)"
+          />
+        </div>
 
         {distributions.length === 0 && (
           <div className="empty-state">
