@@ -166,6 +166,7 @@ export default function Companies() {
                 <th>Name</th>
                 <th>Industry</th>
                 <th>Currency</th>
+                <th className="num">Total Project Cost</th>
                 <th>Status</th>
                 {!isAdmin && <th style={{ textAlign: 'right' }}>Your Stake</th>}
               </tr>
@@ -176,6 +177,7 @@ export default function Companies() {
                   <td>{c.name}</td>
                   <td>{c.industry || '—'}</td>
                   <td className="mono">{c.currency}</td>
+                  <td className="num">{formatCurrency(c.total_project_cost, c.currency)}</td>
                   <td>
                     <span className={`badge ${c.status}`}>{c.status}</span>
                   </td>
