@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Wallet, ArrowDownToLine, PieChart, Clock } from 'lucide-react';
+import { TrendingUp, Wallet, ArrowDownToLine, PieChart, Clock, Landmark } from 'lucide-react';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatCurrency, CURRENCY_OPTIONS } from '../utils/currency.js';
@@ -53,6 +53,7 @@ export default function CompanyDetail() {
   const [returns, setReturns] = useState([]);
   const [returnsTotal, setReturnsTotal] = useState(0);
   const [distributions, setDistributions] = useState([]);
+  const [investments, setInvestments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -65,13 +66,13 @@ export default function CompanyDetail() {
   const [selectedReturnIds, setSelectedReturnIds] = useState([]);
   const [bulkDeletingReturns, setBulkDeletingReturns] = useState(false);
 
-  const [linkForm, setLinkForm] = useState({ investorId: '', ownershipPercentage: '', capitalCommitted: '' });
-  const [linkError, setLinkError] = useState(null);
-  const [linking, setLinking] = useState(false);
+  const [investmentForm, setInvestmentForm] = useState({ investorId: '', investedOn: '', amount: '', notes: '' });
+  const [investmentError, setInvestmentError] = useState(null);
+  const [savingInvestment, setSavingInvestment] = useState(false);
+  const [editingInvestmentId, setEditingInvestmentId] = useState(null);
 
-  const [editingInvestorId, setEditingInvestorId] = useState(null);
-  const [editStakeForm, setEditStakeForm] = useState({ ownershipPercentage: '', capitalCommitted: '' });
-  const [savingStake, setSavingStake] = useState(false);
+  const [savingProjectCost, setSavingProjectCost] = useState(false);
+  const [projectCostInput, setProjectCostInput] = useState('');
 
   const [saleForm, setSaleForm] = useState({ saleDate: '', amount: '', notes: '' });
   const [saleError, setSaleError] = useState(null);
@@ -107,6 +108,8 @@ export default function CompanyDetail() {
 
       const distRes = await api.get(`/companies/${id}/distributions`);
       setDistributions(distRes.data.distributions);
+      const investmentsRes = await api.get(`/companies/${id}/investments`);
+      setInvestments(investmentsRes.data.investments);
       await loadSales();
 
       if (isAdmin) {
@@ -138,6 +141,10 @@ export default function CompanyDetail() {
     if (!loading) loadSales();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salesFilter]);
+
+  useEffect(() => {
+    if (company) setProjectCostInput(String(company.total_project_cost ?? 0));
+  }, [company]);
 
   const chartData = useMemo(() => {
     const byMonth = {};
@@ -215,29 +222,11 @@ export default function CompanyDetail() {
     }
   }
 
-  async function handleLinkInvestor(e) {
-    e.preventDefault();
-    setLinkError(null);
-    if (!linkForm.investorId) {
-      setLinkError('Choose an investor to link.');
-      return;
-    }
-    setLinking(true);
-    try {
-      await api.put(`/companies/${id}/investors/${linkForm.investorId}`, {
-        ownershipPercentage: Number(linkForm.ownershipPercentage) || 0,
-        capitalCommitted: Number(linkForm.capitalCommitted) || 0,
-      });
-      setLinkForm({ investorId: '', ownershipPercentage: '', capitalCommitted: '' });
-      load();
-    } catch (err) {
-      setLinkError(err.response?.data?.error || 'Could not link that investor.');
-    } finally {
-      setLinking(false);
-    }
-  }
-
-  async function handleUnlink(investorId) {
+  async function handleUnlinkInvestor(investorId) {
+    const confirmed = window.confirm(
+      "Remove this investor's access to this company? Their investment history is kept, but they won't be able to see this company anymore until logged again."
+    );
+    if (!confirmed) return;
     try {
       await api.delete(`/companies/${id}/investors/${investorId}`);
       load();
@@ -246,27 +235,73 @@ export default function CompanyDetail() {
     }
   }
 
-  function startEditStake(inv) {
-    setEditingInvestorId(inv.id);
-    setEditStakeForm({
-      ownershipPercentage: String(inv.ownership_percentage),
-      capitalCommitted: String(inv.capital_committed),
+  function startEditInvestment(inv) {
+    setEditingInvestmentId(inv.id);
+    setInvestmentForm({
+      investorId: inv.investor_id,
+      investedOn: inv.invested_on.slice(0, 10),
+      amount: String(inv.amount),
+      notes: inv.notes || '',
     });
   }
 
-  async function handleSaveStake(investorId) {
-    setSavingStake(true);
+  function cancelEditInvestment() {
+    setEditingInvestmentId(null);
+    setInvestmentForm({ investorId: '', investedOn: '', amount: '', notes: '' });
+  }
+
+  async function handleSubmitInvestment(e) {
+    e.preventDefault();
+    setInvestmentError(null);
+    if (!investmentForm.investorId || !investmentForm.investedOn || investmentForm.amount === '') {
+      setInvestmentError('Investor, date, and amount are all required.');
+      return;
+    }
+    setSavingInvestment(true);
     try {
-      await api.put(`/companies/${id}/investors/${investorId}`, {
-        ownershipPercentage: Number(editStakeForm.ownershipPercentage) || 0,
-        capitalCommitted: Number(editStakeForm.capitalCommitted) || 0,
-      });
-      setEditingInvestorId(null);
+      if (editingInvestmentId) {
+        await api.patch(`/companies/${id}/investments/${editingInvestmentId}`, {
+          investedOn: investmentForm.investedOn,
+          amount: Number(investmentForm.amount),
+          notes: investmentForm.notes,
+        });
+      } else {
+        await api.post(`/companies/${id}/investments`, {
+          investorId: investmentForm.investorId,
+          investedOn: investmentForm.investedOn,
+          amount: Number(investmentForm.amount),
+          notes: investmentForm.notes,
+        });
+      }
+      setInvestmentForm({ investorId: '', investedOn: '', amount: '', notes: '' });
+      setEditingInvestmentId(null);
+      load();
+    } catch (err) {
+      setInvestmentError(err.response?.data?.error || 'Could not save that investment.');
+    } finally {
+      setSavingInvestment(false);
+    }
+  }
+
+  async function handleDeleteInvestment(investmentId) {
+    try {
+      await api.delete(`/companies/${id}/investments/${investmentId}`);
+      if (editingInvestmentId === investmentId) cancelEditInvestment();
       load();
     } catch {
-      setError('Could not update that stake.');
+      setError('Could not remove that entry.');
+    }
+  }
+
+  async function handleTotalProjectCostChange(newValue) {
+    setSavingProjectCost(true);
+    try {
+      await api.patch(`/companies/${id}`, { totalProjectCost: Number(newValue) || 0 });
+      load();
+    } catch {
+      setError('Could not update the total project cost.');
     } finally {
-      setSavingStake(false);
+      setSavingProjectCost(false);
     }
   }
 
@@ -433,8 +468,6 @@ export default function CompanyDetail() {
     );
   }
 
-  const linkedInvestorIds = new Set(investors.map((i) => i.id));
-  const availableToLink = allInvestors.filter((u) => !linkedInvestorIds.has(u.id));
   const currency = company.currency || 'USD';
 
   return (
@@ -449,26 +482,54 @@ export default function CompanyDetail() {
           <h1>{company.name}</h1>
           {company.description && <p className="lede">{company.description}</p>}
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {isAdmin ? (
-            <select
-              value={currency}
-              disabled={savingCurrency}
-              onChange={(e) => handleCurrencyChange(e.target.value)}
-              className="mono"
-              style={{
-                padding: '0.4rem 0.6rem',
-                border: '1px solid var(--line)',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--white)',
-              }}
-            >
-              {CURRENCY_OPTIONS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+            <>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <label htmlFor="totalProjectCost" style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)' }}>
+                  Total Project Cost
+                </label>
+                <input
+                  id="totalProjectCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="mono"
+                  value={projectCostInput}
+                  onChange={(e) => setProjectCostInput(e.target.value)}
+                  onBlur={() => {
+                    if (Number(projectCostInput) !== Number(company.total_project_cost)) {
+                      handleTotalProjectCostChange(projectCostInput);
+                    }
+                  }}
+                  disabled={savingProjectCost}
+                  style={{
+                    width: '140px',
+                    padding: '0.4rem 0.6rem',
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius-sm)',
+                  }}
+                />
+              </span>
+              <select
+                value={currency}
+                disabled={savingCurrency}
+                onChange={(e) => handleCurrencyChange(e.target.value)}
+                className="mono"
+                style={{
+                  padding: '0.4rem 0.6rem',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--white)',
+                }}
+              >
+                {CURRENCY_OPTIONS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </>
           ) : (
             <span className="mono" style={{ color: 'var(--slate)', fontSize: 'var(--step-sm)' }}>
               {currency}
@@ -480,6 +541,13 @@ export default function CompanyDetail() {
 
       {isAdmin && (
         <div className="stat-grid">
+          <div className="stat-card tone-champagne">
+            <div className="label-row">
+              <Landmark size={15} />
+              <div className="label">Total Project Cost</div>
+            </div>
+            <div className="value">{formatCurrency(company.total_project_cost, currency)}</div>
+          </div>
           <div className="stat-card tone-amber">
             <div className="label-row">
               <TrendingUp size={15} />
@@ -506,17 +574,24 @@ export default function CompanyDetail() {
 
       {!isAdmin && company.ownership_percentage !== undefined && (
         <div className="stat-grid">
+          <div className="stat-card tone-champagne">
+            <div className="label-row">
+              <Landmark size={15} />
+              <div className="label">Total Project Cost</div>
+            </div>
+            <div className="value">{formatCurrency(company.total_project_cost, currency)}</div>
+          </div>
           <div className="stat-card tone-navy">
             <div className="label-row">
               <PieChart size={15} />
               <div className="label">Your Ownership</div>
             </div>
-            <div className="value">{Number(company.ownership_percentage)}%</div>
+            <div className="value">{Number(company.ownership_percentage).toFixed(1)}%</div>
           </div>
           <div className="stat-card tone-amber">
             <div className="label-row">
               <Wallet size={15} />
-              <div className="label">Capital Committed</div>
+              <div className="label">Invested Amount</div>
             </div>
             <div className="value">{formatCurrency(company.capital_committed, currency)}</div>
           </div>
@@ -939,172 +1014,199 @@ export default function CompanyDetail() {
       {isAdmin && (
         <div className="card card-pad" style={{ marginBottom: '1.5rem' }}>
           <div className="section-title">Investors</div>
+          <p style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)', margin: '0 0 1rem' }}>
+            Total invested and ownership % are calculated automatically from the investment ledger
+            below — edit an entry there rather than here to correct a figure.
+          </p>
 
           {investors.length === 0 && (
             <div className="empty-state">
-              <h3>No investors linked yet</h3>
-              <p>Link an investor below to give them visibility into this company.</p>
+              <h3>No investors yet</h3>
+              <p>Log an investment below — that's what gives an investor access to this company.</p>
             </div>
           )}
 
           {investors.length > 0 && (
-            <table className="data-table" style={{ marginBottom: '1.5rem' }}>
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Investor</th>
                   <th>Email</th>
+                  <th className="num">Invested Amount</th>
                   <th className="num">Ownership</th>
-                  <th className="num">Capital Committed</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {investors.map((inv) =>
-                  editingInvestorId === inv.id ? (
-                    <tr key={inv.id}>
-                      <td>{inv.name}</td>
-                      <td>{inv.email}</td>
-                      <td className="num">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                          value={editStakeForm.ownershipPercentage}
-                          onChange={(e) =>
-                            setEditStakeForm({ ...editStakeForm, ownershipPercentage: e.target.value })
-                          }
-                          style={{ width: '90px', textAlign: 'right' }}
-                        />
-                      </td>
-                      <td className="num">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={editStakeForm.capitalCommitted}
-                          onChange={(e) =>
-                            setEditStakeForm({ ...editStakeForm, capitalCommitted: e.target.value })
-                          }
-                          style={{ width: '130px', textAlign: 'right' }}
-                        />
-                      </td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <button
-                          type="button"
-                          className="btn btn-dark"
-                          disabled={savingStake}
-                          onClick={() => handleSaveStake(inv.id)}
-                          style={{ marginRight: '0.5rem' }}
-                        >
-                          {savingStake ? 'Saving…' : 'Save'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-outline"
-                          onClick={() => setEditingInvestorId(null)}
-                        >
-                          Cancel
-                        </button>
-                      </td>
-                    </tr>
-                  ) : (
-                    <tr key={inv.id}>
-                      <td>{inv.name}</td>
-                      <td>{inv.email}</td>
-                      <td className="num">{Number(inv.ownership_percentage)}%</td>
-                      <td className="num">{formatCurrency(inv.capital_committed, currency)}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <button
-                          type="button"
-                          className="btn btn-outline"
-                          onClick={() => startEditStake(inv)}
-                          style={{ marginRight: '0.5rem' }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-outline"
-                          onClick={() => handleUnlink(inv.id)}
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                )}
+                {investors.map((inv) => (
+                  <tr key={inv.id}>
+                    <td>{inv.name}</td>
+                    <td>{inv.email}</td>
+                    <td className="num">{formatCurrency(inv.capital_committed, currency)}</td>
+                    <td className="num">{Number(inv.ownership_percentage).toFixed(1)}%</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={() => handleUnlinkInvestor(inv.id)}
+                      >
+                        Remove Access
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           )}
-
-          {availableToLink.length > 0 ? (
-            <>
-              <div className="section-title" style={{ fontSize: 'var(--step-sm)' }}>
-                Link an investor
-              </div>
-              {linkError && <div className="banner-error">{linkError}</div>}
-              <form
-                className="form-grid"
-                style={{ gridTemplateColumns: '2fr 1fr 1fr auto', alignItems: 'end', display: 'grid' }}
-                onSubmit={handleLinkInvestor}
-              >
-                <div className="field">
-                  <label htmlFor="investorId">Investor</label>
-                  <select
-                    id="investorId"
-                    value={linkForm.investorId}
-                    onChange={(e) => setLinkForm({ ...linkForm, investorId: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.7rem 0.8rem',
-                      border: '1px solid var(--line)',
-                      borderRadius: 'var(--radius-sm)',
-                    }}
-                  >
-                    <option value="">Select…</option>
-                    {availableToLink.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label htmlFor="ownership">Ownership %</label>
-                  <input
-                    id="ownership"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={linkForm.ownershipPercentage}
-                    onChange={(e) => setLinkForm({ ...linkForm, ownershipPercentage: e.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="capital">Capital Committed</label>
-                  <input
-                    id="capital"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={linkForm.capitalCommitted}
-                    onChange={(e) => setLinkForm({ ...linkForm, capitalCommitted: e.target.value })}
-                  />
-                </div>
-                <button className="btn btn-dark" type="submit" disabled={linking}>
-                  {linking ? 'Linking…' : 'Link'}
-                </button>
-              </form>
-            </>
-          ) : (
-            <p style={{ color: 'var(--slate)', fontSize: 'var(--step-sm)' }}>
-              Every investor account is already linked to this company.
-            </p>
-          )}
         </div>
       )}
+
+      <div className="card card-pad" style={{ marginBottom: '1.5rem' }}>
+        <div className="section-title">Investments</div>
+        {!isAdmin && (
+          <p style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)', margin: '0 0 1rem' }}>
+            Every amount you've invested in this company, including any additional investments
+            beyond your initial one.
+          </p>
+        )}
+
+        {investments.length === 0 && (
+          <div className="empty-state">
+            <h3>No investments logged yet</h3>
+            <p>
+              {isAdmin
+                ? 'Log the first investment below.'
+                : "You don't have an investment recorded for this company yet."}
+            </p>
+          </div>
+        )}
+
+        {investments.length > 0 && (
+          <table className="data-table" style={{ marginBottom: isAdmin ? '1.5rem' : 0 }}>
+            <thead>
+              <tr>
+                {isAdmin && <th>Investor</th>}
+                <th>Date</th>
+                <th className="num">Amount</th>
+                <th>Notes</th>
+                {isAdmin && <th></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {investments.map((inv) => (
+                <tr key={inv.id}>
+                  {isAdmin && <td>{inv.investor_name}</td>}
+                  <td>{new Date(inv.invested_on).toLocaleDateString()}</td>
+                  <td className="num">{formatCurrency(inv.amount, currency)}</td>
+                  <td>{inv.notes || '—'}</td>
+                  {isAdmin && (
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={() => startEditInvestment(inv)}
+                        style={{ marginRight: '0.5rem' }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={() => handleDeleteInvestment(inv.id)}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {isAdmin && (
+          <>
+            <div className="section-title" style={{ fontSize: 'var(--step-sm)' }}>
+              {editingInvestmentId ? 'Edit investment' : 'Log an investment'}
+            </div>
+            <p style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)', margin: '0 0 1rem' }}>
+              {editingInvestmentId
+                ? 'Editing an existing entry.'
+                : "Pick any investor — if this is their first investment here, it also gives them access to this company. To add more from an investor already linked, just log another entry for them."}
+            </p>
+            {investmentError && <div className="banner-error">{investmentError}</div>}
+            <form
+              className="form-grid"
+              style={{ gridTemplateColumns: '2fr 1fr 1fr 1.5fr auto', alignItems: 'end', display: 'grid' }}
+              onSubmit={handleSubmitInvestment}
+            >
+              <div className="field">
+                <label htmlFor="investmentInvestor">Investor</label>
+                <select
+                  id="investmentInvestor"
+                  value={investmentForm.investorId}
+                  disabled={!!editingInvestmentId}
+                  onChange={(e) => setInvestmentForm({ ...investmentForm, investorId: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem 0.8rem',
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius-sm)',
+                  }}
+                >
+                  <option value="">Select…</option>
+                  {allInvestors.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="investmentDate">Date</label>
+                <input
+                  id="investmentDate"
+                  type="date"
+                  value={investmentForm.investedOn}
+                  onChange={(e) => setInvestmentForm({ ...investmentForm, investedOn: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="investmentAmount">Amount</label>
+                <input
+                  id="investmentAmount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={investmentForm.amount}
+                  onChange={(e) => setInvestmentForm({ ...investmentForm, amount: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="investmentNotes">Notes</label>
+                <input
+                  id="investmentNotes"
+                  value={investmentForm.notes}
+                  onChange={(e) => setInvestmentForm({ ...investmentForm, notes: e.target.value })}
+                  placeholder="Optional"
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn btn-dark" type="submit" disabled={savingInvestment}>
+                  {savingInvestment ? 'Saving…' : editingInvestmentId ? 'Update' : 'Add'}
+                </button>
+                {editingInvestmentId && (
+                  <button type="button" className="btn btn-outline" onClick={cancelEditInvestment}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+          </>
+        )}
+      </div>
 
       <div className="card card-pad" style={{ marginBottom: isAdmin ? '1.5rem' : 0 }}>
         <div className="section-title">Distributions</div>
