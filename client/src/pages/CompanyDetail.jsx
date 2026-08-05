@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Wallet, ArrowDownToLine, PieChart, Clock, Landmark } from 'lucide-react';
+import { TrendingUp, Wallet, ArrowDownToLine, PieChart, Clock, Landmark, Building2 } from 'lucide-react';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatCurrency, CURRENCY_OPTIONS } from '../utils/currency.js';
@@ -73,6 +73,8 @@ export default function CompanyDetail() {
 
   const [savingProjectCost, setSavingProjectCost] = useState(false);
   const [projectCostInput, setProjectCostInput] = useState('');
+  const [savingEcInvestment, setSavingEcInvestment] = useState(false);
+  const [ecInvestmentInput, setEcInvestmentInput] = useState('');
 
   const [saleForm, setSaleForm] = useState({ saleDate: '', amount: '', notes: '' });
   const [saleError, setSaleError] = useState(null);
@@ -143,7 +145,10 @@ export default function CompanyDetail() {
   }, [salesFilter]);
 
   useEffect(() => {
-    if (company) setProjectCostInput(String(company.total_project_cost ?? 0));
+    if (company) {
+      setProjectCostInput(String(company.total_project_cost ?? 0));
+      setEcInvestmentInput(String(company.ec_holding_investment ?? 0));
+    }
   }, [company]);
 
   const chartData = useMemo(() => {
@@ -302,6 +307,18 @@ export default function CompanyDetail() {
       setError('Could not update the total project cost.');
     } finally {
       setSavingProjectCost(false);
+    }
+  }
+
+  async function handleEcInvestmentChange(newValue) {
+    setSavingEcInvestment(true);
+    try {
+      await api.patch(`/companies/${id}`, { ecHoldingInvestment: Number(newValue) || 0 });
+      load();
+    } catch {
+      setError("Could not update Evercrest Holdings' investment.");
+    } finally {
+      setSavingEcInvestment(false);
     }
   }
 
@@ -476,6 +493,12 @@ export default function CompanyDetail() {
         ← Back to companies
       </button>
 
+      {error && (
+        <div className="banner-error" style={{ marginBottom: '1.5rem' }}>
+          {error}
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <div className="eyebrow">{company.industry || 'Company'}</div>
@@ -503,6 +526,32 @@ export default function CompanyDetail() {
                     }
                   }}
                   disabled={savingProjectCost}
+                  style={{
+                    width: '140px',
+                    padding: '0.4rem 0.6rem',
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius-sm)',
+                  }}
+                />
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <label htmlFor="ecInvestment" style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)' }}>
+                  Evercrest's Own Investment
+                </label>
+                <input
+                  id="ecInvestment"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="mono"
+                  value={ecInvestmentInput}
+                  onChange={(e) => setEcInvestmentInput(e.target.value)}
+                  onBlur={() => {
+                    if (Number(ecInvestmentInput) !== Number(company.ec_holding_investment)) {
+                      handleEcInvestmentChange(ecInvestmentInput);
+                    }
+                  }}
+                  disabled={savingEcInvestment}
                   style={{
                     width: '140px',
                     padding: '0.4rem 0.6rem',
@@ -548,6 +597,20 @@ export default function CompanyDetail() {
             </div>
             <div className="value">{formatCurrency(company.total_project_cost, currency)}</div>
           </div>
+          <div className="stat-card tone-navy">
+            <div className="label-row">
+              <Building2 size={15} />
+              <div className="label">Total Evercrest Investment</div>
+            </div>
+            <div className="value">{formatCurrency(company.total_ec_holding_investment, currency)}</div>
+          </div>
+          <div className="stat-card tone-brass">
+            <div className="label-row">
+              <Wallet size={15} />
+              <div className="label">Unmanaged Balance</div>
+            </div>
+            <div className="value">{formatCurrency(company.unmanaged_balance, currency)}</div>
+          </div>
           <div className="stat-card tone-amber">
             <div className="label-row">
               <TrendingUp size={15} />
@@ -558,7 +621,7 @@ export default function CompanyDetail() {
           <div className="stat-card tone-navy">
             <div className="label-row">
               <Wallet size={15} />
-              <div className="label">Total Invested</div>
+              <div className="label">Individual Investors Total</div>
             </div>
             <div className="value">{formatCurrency(company.total_invested, currency)}</div>
           </div>
@@ -580,6 +643,13 @@ export default function CompanyDetail() {
               <div className="label">Total Project Cost</div>
             </div>
             <div className="value">{formatCurrency(company.total_project_cost, currency)}</div>
+          </div>
+          <div className="stat-card tone-navy">
+            <div className="label-row">
+              <Building2 size={15} />
+              <div className="label">Total Evercrest Investment</div>
+            </div>
+            <div className="value">{formatCurrency(company.total_ec_holding_investment, currency)}</div>
           </div>
           <div className="stat-card tone-navy">
             <div className="label-row">
