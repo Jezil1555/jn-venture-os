@@ -7,10 +7,8 @@ import {
   updateDistribution,
   deleteDistribution,
 } from '../models/distributionsModel.js';
+import { sendDistributionNotification } from '../services/emailService.js';
 
-// GET /api/companies/:id/distributions
-// Admin sees every investor's distributions for this company.
-// Investor sees only their own — never another investor's figures.
 export async function getDistributions(req, res) {
   const company = await getCompanyByIdForUser(req.params.id, req.user);
   if (!company) {
@@ -27,7 +25,6 @@ export async function getDistributions(req, res) {
   return res.json({ distributions });
 }
 
-// POST /api/companies/:id/distributions (admin only)
 export async function postDistribution(req, res) {
   const { investorId, distributedOn, amount, notes } = req.body;
 
@@ -44,11 +41,9 @@ export async function postDistribution(req, res) {
     return res.status(404).json({ error: 'Company not found.' });
   }
 
-  // Confirm this investor is actually linked to the company before
-  // recording a payout to them for it.
   const linkedInvestors = await listInvestorsForCompany(req.params.id);
-  const isLinked = linkedInvestors.some((inv) => inv.id === investorId);
-  if (!isLinked) {
+  const investor = linkedInvestors.find((inv) => inv.id === investorId);
+  if (!investor) {
     return res.status(400).json({ error: 'That investor is not linked to this company.' });
   }
 
@@ -60,10 +55,18 @@ export async function postDistribution(req, res) {
     notes,
     createdBy: req.user.id,
   });
+
+  sendDistributionNotification({
+    investorEmail: investor.email,
+    investorName: investor.name,
+    companyName: company.name,
+    distribution: entry,
+    currency: company.currency,
+  }).catch((err) => console.error('[email] distribution notification failed:', err.message));
+
   return res.status(201).json({ distribution: entry });
 }
 
-// PATCH /api/companies/:id/distributions/:distributionId (admin only)
 export async function patchDistribution(req, res) {
   const { distributedOn, amount, notes } = req.body;
 
@@ -86,7 +89,6 @@ export async function patchDistribution(req, res) {
   return res.json({ distribution: updated });
 }
 
-// DELETE /api/companies/:id/distributions/:distributionId (admin only)
 export async function removeDistribution(req, res) {
   const removed = await deleteDistribution(req.params.distributionId, req.params.id);
   if (!removed) {
