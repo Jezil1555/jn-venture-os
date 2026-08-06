@@ -1,4 +1,4 @@
-import { getCompanyByIdForUser } from '../models/companyModel.js';
+import { getCompanyByIdForUser, listInvestorsForCompany } from '../models/companyModel.js';
 import {
   listSalesForCompany,
   createSale,
@@ -7,14 +7,11 @@ import {
   bulkCreateSales,
   bulkDeleteSales,
 } from '../models/salesModel.js';
+import { sendSaleNotification } from '../services/emailService.js';
 
 const MAX_BULK_ROWS = 5000;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-// Sales are viewed through the same lens as the company itself: admins see
-// any company's sales, investors only see sales for a company they're
-// actually linked to. We reuse getCompanyByIdForUser as the access check
-// so this can never drift out of sync with company visibility rules.
 async function assertCanViewCompany(companyId, user) {
   const company = await getCompanyByIdForUser(companyId, user);
   if (!company) {
@@ -25,7 +22,6 @@ async function assertCanViewCompany(companyId, user) {
   return company;
 }
 
-// GET /api/companies/:id/sales?from=YYYY-MM-DD&to=YYYY-MM-DD
 export async function getSales(req, res) {
   await assertCanViewCompany(req.params.id, req.user);
   const { from, to } = req.query;
@@ -36,7 +32,6 @@ export async function getSales(req, res) {
   return res.json({ sales, total });
 }
 
-// POST /api/companies/:id/sales (admin only, enforced by route middleware)
 export async function postSale(req, res) {
   const { saleDate, amount, notes } = req.body;
 
@@ -48,8 +43,7 @@ export async function postSale(req, res) {
     return res.status(400).json({ error: 'Amount must be a number.' });
   }
 
-  // Confirm the company exists before attaching a sale to it.
-  await assertCanViewCompany(req.params.id, req.user);
+  const company = await assertCanViewCompany(req.params.id, req.user);
 
   const sale = await createSale({
     companyId: req.params.id,
@@ -58,14 +52,24 @@ export async function postSale(req, res) {
     notes,
     createdBy: req.user.id,
   });
+
+  listInvestorsForCompany(req.params.id)
+    .then((investors) => {
+      investors.forEach((investor) => {
+        sendSaleNotification({
+          investorEmail: investor.email,
+          investorName: investor.name,
+          companyName: company.name,
+          sale,
+          currency: company.currency,
+        }).catch((err) => console.error('[email] sale notification failed:', err.message));
+      });
+    })
+    .catch((err) => console.error('[email] could not load investors to notify:', err.message));
+
   return res.status(201).json({ sale });
 }
 
-// POST /api/companies/:id/sales/bulk (admin only)
-// Body: { sales: [{ saleDate: 'YYYY-MM-DD', amount: number, notes?: string }, ...] }
-// The client is expected to have already parsed and validated the
-// spreadsheet — this endpoint re-validates anyway, since a client bug or
-// a hand-crafted request shouldn't be able to write bad rows.
 export async function postBulkSales(req, res) {
   const { sales } = req.body;
 
@@ -107,9 +111,6 @@ export async function postBulkSales(req, res) {
   return res.status(201).json({ inserted });
 }
 
-// POST /api/companies/:id/sales/bulk-delete (admin only)
-// Body: { saleIds: [...] }. Using POST rather than DELETE-with-a-body
-// avoids relying on clients/proxies that strip bodies from DELETE requests.
 const MAX_BULK_DELETE = 5000;
 
 export async function postBulkDeleteSales(req, res) {
@@ -128,7 +129,6 @@ export async function postBulkDeleteSales(req, res) {
   return res.json({ deleted });
 }
 
-// DELETE /api/companies/:id/sales/:saleId (admin only)
 export async function removeSale(req, res) {
   const removed = await deleteSale(req.params.saleId, req.params.id);
   if (!removed) {
