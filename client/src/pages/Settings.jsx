@@ -26,6 +26,8 @@ export default function Settings() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [emailTestResult, setEmailTestResult] = useState(null);
 
   useEffect(() => {
     api
@@ -58,6 +60,19 @@ export default function Settings() {
       setError(err.response?.data?.error || 'Could not save these settings.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleTestEmail() {
+    setTestingEmail(true);
+    setEmailTestResult(null);
+    try {
+      const { data } = await api.post('/settings/test-email');
+      setEmailTestResult({ ok: true, message: `Sent to ${data.to} — check your inbox.` });
+    } catch (err) {
+      setEmailTestResult({ ok: false, message: err.response?.data?.error || 'Could not send a test email.' });
+    } finally {
+      setTestingEmail(false);
     }
   }
 
@@ -178,6 +193,35 @@ export default function Settings() {
               {saving ? 'Saving…' : 'Save'}
             </button>
           </form>
+        )}
+      </div>
+
+      <div className="card card-pad" style={{ maxWidth: 640, marginTop: '1.5rem' }}>
+        <div className="section-title">Email Notifications</div>
+        <p style={{ fontSize: 'var(--step-sm)', color: 'var(--slate)', margin: '0 0 1rem' }}>
+          Investors are emailed automatically when a distribution is recorded for them, and when a
+          sale is logged for a company they hold a position in (bulk spreadsheet imports don't
+          trigger these — only sales added one at a time). This needs a Resend API key set as{' '}
+          <code className="mono">RESEND_API_KEY</code> on the backend, and a verified sending
+          domain before it can email anyone other than your own account.
+        </p>
+        <button type="button" className="btn btn-outline" onClick={handleTestEmail} disabled={testingEmail}>
+          {testingEmail ? 'Sending…' : 'Send Test Email to Myself'}
+        </button>
+        {emailTestResult && (
+          <div
+            style={{
+              marginTop: '1rem',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--step-sm)',
+              background: emailTestResult.ok ? '#e5f0ea' : undefined,
+              color: emailTestResult.ok ? 'var(--positive)' : undefined,
+            }}
+            className={emailTestResult.ok ? '' : 'banner-error'}
+          >
+            {emailTestResult.message}
+          </div>
         )}
       </div>
     </div>
