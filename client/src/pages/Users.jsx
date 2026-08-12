@@ -9,6 +9,7 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'investor' });
@@ -69,6 +70,23 @@ export default function Users() {
       setError(err.response?.data?.error || "Could not update that person's access.");
     } finally {
       setTogglingId(null);
+    }
+  }
+
+  async function handleDeleteUser(u) {
+    const confirmed = window.confirm(
+      `Permanently delete ${u.name}'s account? This cannot be undone. If they have any investment or distribution history, this will be blocked automatically to protect that record — use "Remove Access" instead for those accounts.`
+    );
+    if (!confirmed) return;
+    setDeletingId(u.id);
+    setError(null);
+    try {
+      await api.delete(`/users/${u.id}`);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not delete that account.');
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -181,14 +199,25 @@ export default function Users() {
                       {isSelf ? (
                         <span style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)' }}>That's you</span>
                       ) : (
-                        <button
-                          type="button"
-                          className="btn btn-outline"
-                          disabled={togglingId === u.id}
-                          onClick={() => handleToggleStatus(u)}
-                        >
-                          {togglingId === u.id ? 'Saving…' : u.is_active ? 'Remove Access' : 'Reactivate'}
-                        </button>
+                        <span style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            disabled={togglingId === u.id}
+                            onClick={() => handleToggleStatus(u)}
+                          >
+                            {togglingId === u.id ? 'Saving…' : u.is_active ? 'Remove Access' : 'Reactivate'}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn"
+                            style={{ background: 'var(--negative)', color: 'var(--white)' }}
+                            disabled={deletingId === u.id}
+                            onClick={() => handleDeleteUser(u)}
+                          >
+                            {deletingId === u.id ? 'Deleting…' : 'Delete'}
+                          </button>
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -202,7 +231,9 @@ export default function Users() {
       <p style={{ marginTop: '1.5rem', fontSize: 'var(--step-sm)', color: 'var(--slate)' }}>
         Adding an investor here gives them a login. To let them see a specific company, go to that
         company's page and link them there with their ownership stake. "Remove Access" deactivates
-        a login rather than deleting it outright, so any of their distribution history stays intact.
+        a login without deleting anything. "Delete" permanently removes the account — this only
+        works for accounts with no investment or distribution history; anyone with real financial
+        history is protected automatically and needs "Remove Access" instead.
       </p>
     </div>
   );
