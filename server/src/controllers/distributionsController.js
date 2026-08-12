@@ -1,5 +1,6 @@
 import { getCompanyByIdForUser } from '../models/companyModel.js';
 import { listInvestorsForCompany } from '../models/companyModel.js';
+import { findUserById } from '../models/userModel.js';
 import {
   listDistributionsForCompany,
   listDistributionsForInvestor,
@@ -9,6 +10,7 @@ import {
 } from '../models/distributionsModel.js';
 import { sendDistributionNotification } from '../services/emailService.js';
 
+// GET /api/companies/:id/distributions
 export async function getDistributions(req, res) {
   const company = await getCompanyByIdForUser(req.params.id, req.user);
   if (!company) {
@@ -25,6 +27,7 @@ export async function getDistributions(req, res) {
   return res.json({ distributions });
 }
 
+// POST /api/companies/:id/distributions (admin only)
 export async function postDistribution(req, res) {
   const { investorId, distributedOn, amount, notes } = req.body;
 
@@ -47,6 +50,8 @@ export async function postDistribution(req, res) {
     return res.status(400).json({ error: 'That investor is not linked to this company.' });
   }
 
+  const investorFull = await findUserById(investorId);
+
   const entry = await createDistribution({
     companyId: req.params.id,
     investorId,
@@ -54,6 +59,10 @@ export async function postDistribution(req, res) {
     amount: numericAmount,
     notes,
     createdBy: req.user.id,
+    bankAccountHolder: investorFull?.bank_account_holder,
+    bankAccountNumber: investorFull?.bank_account_number,
+    bankName: investorFull?.bank_name,
+    bankRoutingCode: investorFull?.bank_routing_code,
   });
 
   sendDistributionNotification({
@@ -67,6 +76,7 @@ export async function postDistribution(req, res) {
   return res.status(201).json({ distribution: entry });
 }
 
+// PATCH /api/companies/:id/distributions/:distributionId (admin only)
 export async function patchDistribution(req, res) {
   const { distributedOn, amount, notes } = req.body;
 
@@ -89,6 +99,7 @@ export async function patchDistribution(req, res) {
   return res.json({ distribution: updated });
 }
 
+// DELETE /api/companies/:id/distributions/:distributionId (admin only)
 export async function removeDistribution(req, res) {
   const removed = await deleteDistribution(req.params.distributionId, req.params.id);
   if (!removed) {
