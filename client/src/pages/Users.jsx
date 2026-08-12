@@ -11,6 +11,15 @@ export default function Users() {
   const [togglingId, setTogglingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [changingRoleId, setChangingRoleId] = useState(null);
+  const [expandedBankId, setExpandedBankId] = useState(null);
+  const [bankForm, setBankForm] = useState({
+    bankAccountHolder: '',
+    bankAccountNumber: '',
+    bankName: '',
+    bankRoutingCode: '',
+  });
+  const [bankError, setBankError] = useState(null);
+  const [savingBank, setSavingBank] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'investor' });
@@ -113,6 +122,35 @@ export default function Users() {
     }
   }
 
+  function toggleBankEditor(u) {
+    if (expandedBankId === u.id) {
+      setExpandedBankId(null);
+      return;
+    }
+    setBankForm({
+      bankAccountHolder: u.bank_account_holder || '',
+      bankAccountNumber: u.bank_account_number || '',
+      bankName: u.bank_name || '',
+      bankRoutingCode: u.bank_routing_code || '',
+    });
+    setBankError(null);
+    setExpandedBankId(u.id);
+  }
+
+  async function handleSaveBank(userId) {
+    setSavingBank(true);
+    setBankError(null);
+    try {
+      await api.patch(`/users/${userId}/bank`, bankForm);
+      setExpandedBankId(null);
+      load();
+    } catch (err) {
+      setBankError(err.response?.data?.error || 'Could not save bank details.');
+    } finally {
+      setSavingBank(false);
+    }
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -209,7 +247,8 @@ export default function Users() {
               {users.map((u) => {
                 const isSelf = u.id === currentUser?.id;
                 return (
-                  <tr key={u.id}>
+                  <React.Fragment key={u.id}>
+                  <tr>
                     <td>{u.name}</td>
                     <td>{u.email}</td>
                     <td style={{ textTransform: 'capitalize' }}>
@@ -243,6 +282,9 @@ export default function Users() {
                         <span style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)' }}>That's you</span>
                       ) : (
                         <span style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                          <button type="button" className="btn btn-outline" onClick={() => toggleBankEditor(u)}>
+                            {expandedBankId === u.id ? 'Close' : 'Bank'}
+                          </button>
                           <button
                             type="button"
                             className="btn btn-outline"
@@ -264,6 +306,61 @@ export default function Users() {
                       )}
                     </td>
                   </tr>
+                  {expandedBankId === u.id && (
+                    <tr>
+                      <td colSpan={5} style={{ background: 'var(--paper-dim)', padding: '1.25rem 1rem' }}>
+                        <div style={{ fontSize: 'var(--step-xs)', color: 'var(--slate)', marginBottom: '0.75rem' }}>
+                          Bank details for {u.name} — this is what shows on any distribution
+                          receipt issued to them going forward. Only admin can set this;
+                          investors can't edit it themselves, since receipts need to stay a
+                          reliable record.
+                        </div>
+                        {bankError && <div className="banner-error">{bankError}</div>}
+                        <div
+                          className="form-grid"
+                          style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr auto', alignItems: 'end', display: 'grid' }}
+                        >
+                          <div className="field">
+                            <label>Account Holder</label>
+                            <input
+                              value={bankForm.bankAccountHolder}
+                              onChange={(e) => setBankForm({ ...bankForm, bankAccountHolder: e.target.value })}
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Account Number</label>
+                            <input
+                              value={bankForm.bankAccountNumber}
+                              onChange={(e) => setBankForm({ ...bankForm, bankAccountNumber: e.target.value })}
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Bank Name</label>
+                            <input
+                              value={bankForm.bankName}
+                              onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })}
+                            />
+                          </div>
+                          <div className="field">
+                            <label>IFSC / Routing / SWIFT</label>
+                            <input
+                              value={bankForm.bankRoutingCode}
+                              onChange={(e) => setBankForm({ ...bankForm, bankRoutingCode: e.target.value })}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-dark"
+                            disabled={savingBank}
+                            onClick={() => handleSaveBank(u.id)}
+                          >
+                            {savingBank ? 'Saving…' : 'Save'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 );
               })}
             </tbody>
@@ -274,10 +371,12 @@ export default function Users() {
       <p style={{ marginTop: '1.5rem', fontSize: 'var(--step-sm)', color: 'var(--slate)' }}>
         Adding an investor here gives them a login. To let them see a specific company, go to that
         company's page and link them there with their ownership stake. Change the Role dropdown to
-        switch someone between Admin and Investor at any time. "Remove Access" deactivates a login
-        without deleting anything. "Delete" permanently removes the account — this only works for
-        accounts with no investment or distribution history; anyone with real financial history is
-        protected automatically and needs "Remove Access" instead.
+        switch someone between Admin and Investor at any time. "Bank" sets where their distribution
+        receipts show funds were sent — admin-only, since receipts need to stay a reliable record;
+        investors can't edit their own. "Remove Access" deactivates a login without deleting
+        anything. "Delete" permanently removes the account — this only works for accounts with no
+        investment or distribution history; anyone with real financial history is protected
+        automatically and needs "Remove Access" instead.
       </p>
     </div>
   );
