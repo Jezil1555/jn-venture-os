@@ -1,4 +1,4 @@
-import { listUsers, setUserActive, userHasFinancialRecords, deleteUser } from '../models/userModel.js';
+import { listUsers, setUserActive, setUserRole, userHasFinancialRecords, deleteUser } from '../models/userModel.js';
 
 // GET /api/users?role=investor (admin only)
 export async function getUsers(req, res) {
@@ -27,11 +27,24 @@ export async function patchUserStatus(req, res) {
   return res.json({ user: updated });
 }
 
+// PATCH /api/users/:id/role (admin only)
+export async function patchUserRole(req, res) {
+  const { role } = req.body;
+  if (!['admin', 'investor'].includes(role)) {
+    return res.status(400).json({ error: "role must be 'admin' or 'investor'." });
+  }
+  if (req.params.id === req.user.id) {
+    return res.status(400).json({ error: 'You cannot change your own role.' });
+  }
+
+  const updated = await setUserRole(req.params.id, role);
+  if (!updated) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+  return res.json({ user: updated });
+}
+
 // DELETE /api/users/:id (admin only)
-// A genuine hard delete — only allowed when the account has zero
-// investment or distribution history, since either of those cascades and
-// would otherwise silently erase real financial records. Accounts with
-// history should be deactivated instead, not deleted.
 export async function removeUser(req, res) {
   if (req.params.id === req.user.id) {
     return res.status(400).json({ error: 'You cannot delete your own account.' });
