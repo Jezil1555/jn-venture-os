@@ -1,4 +1,11 @@
-import { listUsers, setUserActive, setUserRole, userHasFinancialRecords, deleteUser } from '../models/userModel.js';
+import {
+  listUsers,
+  setUserActive,
+  setUserRole,
+  setBankDetails,
+  userHasFinancialRecords,
+  deleteUser,
+} from '../models/userModel.js';
 
 // GET /api/users?role=investor (admin only)
 export async function getUsers(req, res) {
@@ -38,6 +45,21 @@ export async function patchUserRole(req, res) {
   }
 
   const updated = await setUserRole(req.params.id, role);
+  if (!updated) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+  return res.json({ user: updated });
+}
+
+// PATCH /api/users/:id/bank (admin only)
+export async function patchUserBank(req, res) {
+  const { bankAccountHolder, bankAccountNumber, bankName, bankRoutingCode } = req.body;
+  const updated = await setBankDetails(req.params.id, {
+    bankAccountHolder,
+    bankAccountNumber,
+    bankName,
+    bankRoutingCode,
+  });
   if (!updated) {
     return res.status(404).json({ error: 'User not found.' });
   }
