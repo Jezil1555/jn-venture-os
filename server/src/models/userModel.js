@@ -66,6 +66,16 @@ export async function setUserActive(userId, isActive) {
   return rows[0] || null;
 }
 
+export async function setUserRole(userId, role) {
+  const { rows } = await query(
+    `UPDATE users SET role = $1, updated_at = now()
+     WHERE id = $2
+     RETURNING id, name, email, role, is_active, created_at`,
+    [role, userId]
+  );
+  return rows[0] || null;
+}
+
 // investments.investor_id and distributions.investor_id both reference
 // users(id) ON DELETE CASCADE — deleting a user with either would silently
 // wipe their financial history. This is checked before every delete so
