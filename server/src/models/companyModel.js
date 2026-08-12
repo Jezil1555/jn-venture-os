@@ -54,9 +54,7 @@ export async function listCompaniesForUser(user) {
       total_ec_holding_investment: totalEcHoldingInvestment,
       unmanaged_balance: Math.max(Number(r.total_project_cost) - totalEcHoldingInvestment, 0),
       ownership_percentage:
-        Number(r.total_project_cost) > 0
-          ? (Number(r.capital_committed) / Number(r.total_project_cost)) * 100
-          : 0,
+        totalEcHoldingInvestment > 0 ? (Number(r.capital_committed) / totalEcHoldingInvestment) * 100 : 0,
       returns_percent:
         Number(r.capital_committed) > 0
           ? (Number(r.returns_received_so_far) / Number(r.capital_committed)) * 100
@@ -115,9 +113,7 @@ export async function getCompanyByIdForUser(companyId, user) {
     total_ec_holding_investment: totalEcHoldingInvestment,
     unmanaged_balance: Math.max(Number(row.total_project_cost) - totalEcHoldingInvestment, 0),
     ownership_percentage:
-      Number(row.total_project_cost) > 0
-        ? (Number(row.capital_committed) / Number(row.total_project_cost)) * 100
-        : 0,
+      totalEcHoldingInvestment > 0 ? (Number(row.capital_committed) / totalEcHoldingInvestment) * 100 : 0,
     returns_percent:
       Number(row.capital_committed) > 0
         ? (Number(row.returns_received_so_far) / Number(row.capital_committed)) * 100
@@ -215,9 +211,10 @@ export async function removeInvestorLink({ investorId, companyId }) {
 
 export async function listInvestorsForCompany(companyId) {
   const { rows } = await query(
-    `SELECT u.id, u.name, u.email, c.total_project_cost,
+    `SELECT u.id, u.name, u.email, c.total_project_cost, c.ec_holding_investment,
             COALESCE((SELECT SUM(amount) FROM investments
-                      WHERE company_id = $1 AND investor_id = u.id), 0) AS capital_committed
+                      WHERE company_id = $1 AND investor_id = u.id), 0) AS capital_committed,
+            COALESCE((SELECT SUM(amount) FROM investments WHERE company_id = $1), 0) AS all_investors_total
      FROM investor_companies ic
      INNER JOIN users u ON u.id = ic.investor_id
      INNER JOIN companies c ON c.id = ic.company_id
@@ -225,11 +222,12 @@ export async function listInvestorsForCompany(companyId) {
      ORDER BY capital_committed DESC`,
     [companyId]
   );
-  return rows.map((r) => ({
-    ...r,
-    ownership_percentage:
-      Number(r.total_project_cost) > 0
-        ? (Number(r.capital_committed) / Number(r.total_project_cost)) * 100
-        : 0,
-  }));
+  return rows.map((r) => {
+    const totalEcHoldingInvestment = Number(r.ec_holding_investment) + Number(r.all_investors_total);
+    return {
+      ...r,
+      ownership_percentage:
+        totalEcHoldingInvestment > 0 ? (Number(r.capital_committed) / totalEcHoldingInvestment) * 100 : 0,
+    };
+  });
 }
