@@ -10,6 +10,7 @@ export default function Users() {
   const [error, setError] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [changingRoleId, setChangingRoleId] = useState(null);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'investor' });
@@ -87,6 +88,28 @@ export default function Users() {
       setError(err.response?.data?.error || 'Could not delete that account.');
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function handleChangeRole(u, newRole) {
+    if (newRole === u.role) return;
+    const confirmed = window.confirm(
+      `Change ${u.name} from ${u.role} to ${newRole}? ${
+        newRole === 'admin'
+          ? 'They will gain full admin access to every company and user.'
+          : "They will lose admin access and only see companies they're linked to as an investor."
+      }`
+    );
+    if (!confirmed) return;
+    setChangingRoleId(u.id);
+    setError(null);
+    try {
+      await api.patch(`/users/${u.id}/role`, { role: newRole });
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || "Could not change that person's role.");
+    } finally {
+      setChangingRoleId(null);
     }
   }
 
@@ -189,7 +212,27 @@ export default function Users() {
                   <tr key={u.id}>
                     <td>{u.name}</td>
                     <td>{u.email}</td>
-                    <td style={{ textTransform: 'capitalize' }}>{u.role}</td>
+                    <td style={{ textTransform: 'capitalize' }}>
+                      {isSelf ? (
+                        u.role
+                      ) : (
+                        <select
+                          value={u.role}
+                          disabled={changingRoleId === u.id}
+                          onChange={(e) => handleChangeRole(u, e.target.value)}
+                          style={{
+                            padding: '0.35rem 0.5rem',
+                            border: '1px solid var(--line)',
+                            borderRadius: 'var(--radius-sm)',
+                            textTransform: 'capitalize',
+                            background: 'var(--white)',
+                          }}
+                        >
+                          <option value="investor">Investor</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      )}
+                    </td>
                     <td>
                       <span className={`badge ${u.is_active ? 'active' : 'dissolved'}`}>
                         {u.is_active ? 'Active' : 'Inactive'}
@@ -230,10 +273,11 @@ export default function Users() {
 
       <p style={{ marginTop: '1.5rem', fontSize: 'var(--step-sm)', color: 'var(--slate)' }}>
         Adding an investor here gives them a login. To let them see a specific company, go to that
-        company's page and link them there with their ownership stake. "Remove Access" deactivates
-        a login without deleting anything. "Delete" permanently removes the account — this only
-        works for accounts with no investment or distribution history; anyone with real financial
-        history is protected automatically and needs "Remove Access" instead.
+        company's page and link them there with their ownership stake. Change the Role dropdown to
+        switch someone between Admin and Investor at any time. "Remove Access" deactivates a login
+        without deleting anything. "Delete" permanently removes the account — this only works for
+        accounts with no investment or distribution history; anyone with real financial history is
+        protected automatically and needs "Remove Access" instead.
       </p>
     </div>
   );
