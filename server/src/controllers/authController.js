@@ -83,9 +83,6 @@ export async function me(req, res) {
 }
 
 // PATCH /api/auth/profile
-// Anyone can update their own display name and email — this is how the
-// seed accounts (real name, real .test-domain-free email) get replaced
-// with actual identities, since there's no separate "invite" flow.
 export async function updateProfile(req, res) {
   const { name, email } = req.body;
 
@@ -110,8 +107,6 @@ export async function updateProfile(req, res) {
 }
 
 // PATCH /api/auth/password
-// Any logged-in user can change their own password, but must prove they
-// know the current one first — this isn't an admin reset.
 export async function changePassword(req, res) {
   const { currentPassword, newPassword } = req.body;
 
