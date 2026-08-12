@@ -12,7 +12,8 @@ export async function findUserByEmail(email) {
 
 export async function findUserById(id) {
   const { rows } = await query(
-    `SELECT id, name, email, role, is_active, created_at
+    `SELECT id, name, email, role, is_active, created_at,
+            bank_account_holder, bank_account_number, bank_name, bank_routing_code
      FROM users
      WHERE id = $1`,
     [id]
@@ -33,14 +34,16 @@ export async function createUser({ name, email, passwordHash, role }) {
 export async function listUsers({ role } = {}) {
   if (role) {
     const { rows } = await query(
-      `SELECT id, name, email, role, is_active, created_at
+      `SELECT id, name, email, role, is_active, created_at,
+              bank_account_holder, bank_account_number, bank_name, bank_routing_code
        FROM users WHERE role = $1 ORDER BY name ASC`,
       [role]
     );
     return rows;
   }
   const { rows } = await query(
-    `SELECT id, name, email, role, is_active, created_at
+    `SELECT id, name, email, role, is_active, created_at,
+            bank_account_holder, bank_account_number, bank_name, bank_routing_code
      FROM users ORDER BY name ASC`
   );
   return rows;
@@ -76,10 +79,22 @@ export async function setUserRole(userId, role) {
   return rows[0] || null;
 }
 
-// investments.investor_id and distributions.investor_id both reference
-// users(id) ON DELETE CASCADE — deleting a user with either would silently
-// wipe their financial history. This is checked before every delete so
-// that can never happen by accident.
+export async function setBankDetails(
+  userId,
+  { bankAccountHolder, bankAccountNumber, bankName, bankRoutingCode }
+) {
+  const { rows } = await query(
+    `UPDATE users
+     SET bank_account_holder = $1, bank_account_number = $2, bank_name = $3, bank_routing_code = $4,
+         updated_at = now()
+     WHERE id = $5
+     RETURNING id, name, email, role, is_active, created_at,
+               bank_account_holder, bank_account_number, bank_name, bank_routing_code`,
+    [bankAccountHolder || null, bankAccountNumber || null, bankName || null, bankRoutingCode || null, userId]
+  );
+  return rows[0] || null;
+}
+
 export async function userHasFinancialRecords(userId) {
   const { rows } = await query(
     `SELECT
