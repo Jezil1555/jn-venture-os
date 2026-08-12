@@ -65,3 +65,22 @@ export async function setUserActive(userId, isActive) {
   );
   return rows[0] || null;
 }
+
+// investments.investor_id and distributions.investor_id both reference
+// users(id) ON DELETE CASCADE — deleting a user with either would silently
+// wipe their financial history. This is checked before every delete so
+// that can never happen by accident.
+export async function userHasFinancialRecords(userId) {
+  const { rows } = await query(
+    `SELECT
+       EXISTS(SELECT 1 FROM investments WHERE investor_id = $1) AS has_investments,
+       EXISTS(SELECT 1 FROM distributions WHERE investor_id = $1) AS has_distributions`,
+    [userId]
+  );
+  return rows[0].has_investments || rows[0].has_distributions;
+}
+
+export async function deleteUser(userId) {
+  const { rowCount } = await query(`DELETE FROM users WHERE id = $1`, [userId]);
+  return rowCount > 0;
+}
