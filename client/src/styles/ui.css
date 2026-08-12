@@ -11,7 +11,7 @@
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
@@ -58,12 +58,11 @@
 
 .stat-card .value {
   font-family: var(--font-mono);
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   font-weight: 500;
   color: var(--ink);
   line-height: 1.2;
-  overflow-wrap: break-word;
-  word-break: break-word;
+  white-space: nowrap;
 }
 
 .section-title {
