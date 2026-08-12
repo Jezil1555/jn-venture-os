@@ -1,4 +1,4 @@
-import { listUsers, setUserActive } from '../models/userModel.js';
+import { listUsers, setUserActive, userHasFinancialRecords, deleteUser } from '../models/userModel.js';
 
 // GET /api/users?role=investor (admin only)
 export async function getUsers(req, res) {
@@ -11,11 +11,6 @@ export async function getUsers(req, res) {
 }
 
 // PATCH /api/users/:id/status (admin only)
-// This deactivates rather than deletes — a hard delete would cascade and
-// erase that investor's distribution history (the schema references
-// users.id with ON DELETE CASCADE there on purpose, so financial records
-// can't silently point at nothing). Deactivating has the same practical
-// effect — they can no longer log in — without losing the ledger.
 export async function patchUserStatus(req, res) {
   const { isActive } = req.body;
   if (typeof isActive !== 'boolean') {
@@ -30,4 +25,29 @@ export async function patchUserStatus(req, res) {
     return res.status(404).json({ error: 'User not found.' });
   }
   return res.json({ user: updated });
+}
+
+// DELETE /api/users/:id (admin only)
+// A genuine hard delete — only allowed when the account has zero
+// investment or distribution history, since either of those cascades and
+// would otherwise silently erase real financial records. Accounts with
+// history should be deactivated instead, not deleted.
+export async function removeUser(req, res) {
+  if (req.params.id === req.user.id) {
+    return res.status(400).json({ error: 'You cannot delete your own account.' });
+  }
+
+  const hasHistory = await userHasFinancialRecords(req.params.id);
+  if (hasHistory) {
+    return res.status(400).json({
+      error:
+        'This account has investment or distribution history and cannot be deleted, to protect that financial record. Use "Remove Access" to deactivate it instead.',
+    });
+  }
+
+  const deleted = await deleteUser(req.params.id);
+  if (!deleted) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+  return res.status(204).send();
 }
